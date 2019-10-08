@@ -1,6 +1,9 @@
+# -*- coding: future_fstrings -*-
+
 import tensorflow as tf
 import numpy as np
 import argparse
+import json
 
 from mnist import get_data
 
@@ -46,15 +49,15 @@ class Worker:
         return loss
 
     def get_num_samples(self):
-        if 1:
-            num_samples = 100 if np.random.rand() > .7 else 1
-        else:
-            num_samples = int(np.random.normal(loc=64, scale=50.0))
+        if args.method=='bern':
+            num_samples = args.num_samples if np.random.rand() < args.dist_param else 1
+        elif args.method=='gauss':
+            num_samples = int(np.random.normal(loc=args.num_samples, scale=args.dist_param))
             num_samples = max(1, min(self.tot, num_samples))
         return num_samples
 
     def prep_data(self, num_samples=-1):
-        self.num_samples = num_samples# if num_samples>0 else self.get_num_samples()
+        self.num_samples = num_samples if num_samples>0 else self.get_num_samples()
         self.inds = np.random.choice(self.tot, size=self.num_samples)
 
     def get_grad(self, weights):
@@ -69,7 +72,7 @@ def grad_combine_equal(grads, num_samples):
 def grad_combine_conf(grads, num_samples):
     grads, confs = np.array(grads), np.array(num_samples)
     confs = confs/sum(confs)
-    # print(confs)
+    print(num_samples)
     return confs@grads
 
 
@@ -100,21 +103,30 @@ def main():
     w_start = np.random.normal(size=eval.get_size())
     workers = [Worker(eval, xy_) for xy_ in get_data(args.identical)]
     sc = lambda comb: Scheme(workers, np.copy(w_start), comb)
-    schemes = [sc(grad_combine_equal), sc(grad_combine_conf)]
+    schemes = {'Equal':sc(grad_combine_equal), 'Weighted':sc(grad_combine_conf)}
 
-    for t in range(1000):
-        #for worker in workers: worker.prep_data()
-        for i in range(len(workers)): workers[i].prep_data(30 if t%10==i else 1)
-        print([scheme.step() for scheme in schemes])
+    for t in range(args.num_iters):
+        for i in range(len(workers)):
+            if args.method=='round':
+                numsam = args.num_samples if t%len(workers)==i else 1
+            else:
+                numsam = -1
+            workers[i].prep_data(numsam)
 
-    plot([scheme.history for scheme in schemes], ['Equal', 'Weighted'])
+        print([schemes[scheme].step() for scheme in schemes])
+
+    run_id = f'run_{args.method}_{args.num_samples}_{args.identical}'
+    with open('%s.json'%run_id, 'w') as fp_:
+        dd = {scheme:schemes[scheme].history for scheme in schemes}
+        json.dump({**vars(args), **dd}, fp_, indent=4)
+    # plot([scheme.history for scheme in schemes], ['Equal', 'Weighted'])
 
 
 def plot(data, names):
     import matplotlib.pyplot as plt
     ax = plt.gca()
-    for yy,nn in zip(data,names):
-        ax.plot(yy, label=nn)
+    for scheme in schemes:
+        ax.plot(schemes[scheme], label=scheme)
 
     # ax_.set_xlim(min(ww), max(ww))
     # ax_.set_ylim(0,10)
@@ -124,7 +136,11 @@ def plot(data, names):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--identical', action='store_true')
+    parser.add_argument('method', choices=['round', 'gauss', 'bern'])
+    parser.add_argument('--num_iters', help='total iterations count', type=int, default=1000)
+    parser.add_argument('--num_samples', help='num_samples in each sampling method', type=int, default=50)
+    parser.add_argument('--identical', help='identical sampling across workers', action='store_true')
+    parser.add_argument('--dist_param', help='sigma or true prob in gauss/bern', type=float, default=1.)
     return parser.parse_args()
 
 if __name__ == '__main__':
