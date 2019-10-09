@@ -1,6 +1,5 @@
 # -*- coding: future_fstrings -*-
 
-from pathlib import Path
 import tensorflow as tf
 import numpy as np
 import argparse
@@ -28,6 +27,7 @@ class Evaluator:
         logits = x_@w+b
         sm = tf.nn.softmax_cross_entropy_with_logits_v2
         #return tf.reduce_mean(tf.square(logits - y_))
+        # return tf.reduce_mean(tf.reduce_sum(sm(y_, logits), axis=1))
         return tf.reduce_mean(sm(y_, logits))
 
     def get_size(self):
@@ -46,19 +46,19 @@ class Worker:
         self.xy_ = xy_
         self.eval = eval
 
-    def get_loss(self, weights):
+    def get_total_loss(self, weights):
         loss, _ = self.eval.eval(weights, *self.xy_)
         return loss
 
     def get_num_samples(self):
-        if args.method=='bern':
-            num_samples = args.num_samples if np.random.rand() < args.dist_param else 1
-        elif args.method=='gauss':
-            num_samples = int(np.random.normal(loc=args.num_samples, scale=args.dist_param))
+        if _a.strag_dist=='bern':
+            num_samples = _a.num_samples if np.random.rand() < _a.strag_dist_param else 1
+        elif _a.strag_dist=='gauss':
+            num_samples = int(np.random.normal(loc=_a.num_samples, scale=_a.strag_dist_param))
             num_samples = max(1, min(self.tot, num_samples))
         return num_samples
 
-    def prep_data(self, num_samples=-1):
+    def prep_data(self, num_samples):
         self.num_samples = num_samples if num_samples>0 else self.get_num_samples()
         self.inds = np.random.choice(self.tot, size=self.num_samples)
 
@@ -69,112 +69,113 @@ class Worker:
 
 
 def grad_combine_equal(grads, num_samples):
-    return sum(grads)/len(grads)
+    return grads/len(grads)
 
 def grad_combine_conf(grads, num_samples):
-    grads, confs = np.array(grads), np.array(num_samples)
-    confs = confs/sum(confs)
-    print(num_samples)
-    return confs@grads
+    confs = num_samples/sum(num_samples)
+    # print(num_samples)
+    return confs[:, np.newaxis]*grads
 
 
 class Scheme():
-    def __init__(self, workers, w_curr, grad_combine):
+    def __init__(self, workers, w_init, grad_combine):
         self.workers = workers
-        self.w_curr = w_curr
         self.comb = grad_combine
-        self.history = [self.loss()]
 
-    def loss(self):
-        losses = [worker.get_loss(self.w_curr) for worker in self.workers]
+        numw = len(workers)
+        self.curr_w = np.zeros([numw, len(w_init)])
+        for i in range(numw): self.curr_w[i] = w_init
+        self.curr_g = np.zeros([numw, len(w_init)])
+        self.curr_numsam = np.zeros(numw)
+
+        if _a.concensus=='perfect':
+            self.mat_P = np.ones([numw, numw])
+
+        self.history = [self.total_loss()]
+
+    def total_loss(self):
+        losses = [wkr.get_total_loss(wgt) for wkr, wgt in
+                            zip(self.workers, self.curr_w)]
+        # print(np.isclose(self.curr_w, self.curr_w[0]).all())
         return sum(losses)/len(losses)
 
     def step(self):
         step = 0.1
-        worker_outs = [worker.get_grad(self.w_curr) for worker in self.workers]
-        losses, grads, num_samples = zip(*worker_outs)
-        curr_loss = sum(losses)/len(losses)
-        self.w_curr -= step*self.comb(grads, num_samples)
-        tot_loss = self.loss()
+        for i in range(len(self.workers)):
+            worker_out = self.workers[i].get_grad(self.curr_w[i])
+            _, self.curr_g[i], self.curr_numsam[i] = worker_out
+
+        self.curr_w -= step*self.mat_P@self.comb(self.curr_g, self.curr_numsam)
+        tot_loss = self.total_loss()
         self.history.append(tot_loss)
+
         return tot_loss
 
 
 def main():
+    run_id = f'run_{_a.concensus}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.identical_data}'
+
     eval = Evaluator()
-    w_start = np.random.normal(size=eval.get_size())
-    workers = [Worker(eval, xy_) for xy_ in get_data(args.identical)]
-    sc = lambda comb: Scheme(workers, np.copy(w_start), comb)
+    workers = [Worker(eval, xy_) for xy_ in get_data(_a.identical_data)]
+    w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=eval.get_size())
+    sc = lambda comb: Scheme(workers, w_init, comb)
     schemes = {'Equal':sc(grad_combine_equal), 'Weighted':sc(grad_combine_conf)}
 
-    for t in range(args.num_iters):
+    for t in range(_a.num_iters):
+        ## set number of samples each worker is processing
         for i in range(len(workers)):
-            if args.method=='round':
-                numsam = args.num_samples if t%len(workers)==i else 1
+            if _a.strag_dist=='round':
+                numsam = _a.num_samples if t%len(workers)==i else 1
+            elif _a.strag_dist=='equal':
+                numsam = _a.num_samples
             else:
                 numsam = -1
             workers[i].prep_data(numsam)
 
-        print([schemes[scheme].step() for scheme in schemes])
+        ## combine gradients depending on the scheme
+        print({scheme:schemes[scheme].step() for scheme in schemes})
 
-    run_id = f'run_{args.method}_{args.num_samples}_{args.identical}'
-    with open('/scratch/s/sdraper/tharindu/conce/%s.json'%run_id, 'w') as fp_:
-        dd = {scheme:schemes[scheme].history for scheme in schemes}
-        json.dump({**vars(args), **dd}, fp_, indent=4)
+        if t%_a.save_freq==0 and _a.save:
+            with open(os.path.join(_a.data_dir, '%s.json'%run_id), 'w') as fp_:
+                dd = vars(_a)
+                dd['data'] = {scheme:schemes[scheme].history for scheme in schemes}
+                json.dump(dd, fp_, indent=4)
 
-    # if args.plot: plot([scheme.history for scheme in schemes], ['Equal', 'Weighted'])
+    if _a.plot: plot(schemes)
 
 
-def plot(data, names):
+def plot(schemes):
     import matplotlib.pyplot as plt
     ax = plt.gca()
-    for scheme in schemes:
-        ax.plot(schemes[scheme], label=scheme)
-
-    # ax_.set_xlim(min(ww), max(ww))
-    # ax_.set_ylim(0,10)
+    for scheme in schemes: ax.plot(schemes[scheme].history, label=scheme)
     ax.legend(loc='best')
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Loss')
     plt.show()
-
-
-def plot_all():
-    import matplotlib.pyplot as plt
-    from autoscale import autoscale_y
-
-    file_paths = Path('../data/').glob('*.json')
-
-    for fpath in file_paths:
-        data = json.load(open(str(fpath)))
-        ax = plt.gca()
-        ax.plot(data['Equal'], label='Equal')
-        ax.plot(data['Weighted'], label='Weighted')
-        ax.legend(loc='best')
-
-        get_path = lambda prf: os.path.join(str(fpath.parents[0]),
-                                            '%s__%s.png'%(fpath.stem,prf))
-
-        plt.savefig(get_path(''), bbox_inches='tight')
-        ax.set_xlim(500, 1000)
-        autoscale_y(ax)
-        plt.savefig(get_path('5k-10k'), bbox_inches='tight')
-
-        # ax.set_yscale('log')
-        # plt.show()
-        plt.cla()
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('script', choices=['plot', 'eval'])
-    parser.add_argument('--method', choices=['round', 'gauss', 'bern'])
+
+    parser.add_argument('concensus', choices=['perfect', 'rand_walk'])
+
+    parser.add_argument('strag_dist', help='randomness in worker num_samples',  choices=['equal', 'round', 'gauss', 'bern'])
+    parser.add_argument('--strag_dist_param', help='sigma or true prob in gauss/bern', type=float, default=1.)
+    parser.add_argument('--num_samples', help='num_samples in each sampling method', type=int, default=64)
+
+    parser.add_argument('--identical_data', help='identical sampling across workers', action='store_true')
+    parser.add_argument('--weights_seed', help='seed for generating init weights', type=int)
+
     parser.add_argument('--num_iters', help='total iterations count', type=int, default=1000)
-    parser.add_argument('--num_samples', help='num_samples in each sampling method', type=int, default=50)
-    parser.add_argument('--identical', help='identical sampling across workers', action='store_true')
-    parser.add_argument('--dist_param', help='sigma or true prob in gauss/bern', type=float, default=1.)
+    parser.add_argument('--data_dir', default='/scratch/s/sdraper/tharindu/conce')
     parser.add_argument('--plot', help='plot at the end', action='store_true')
+    parser.add_argument('--save', help='save json', action='store_true')
+    parser.add_argument('--save_freq', help='save frequency', type=int, default=50)
+
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-    args = parse_args()
-    print('[Arguments]', vars(args))
-    main() if args.script=='eval' else plot_all()
+    _a = parse_args()
+    print('[Arguments]', vars(_a))
+    main()
