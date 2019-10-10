@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
+import numpy as np
 import argparse
 import json
 import os
@@ -12,9 +13,18 @@ def main():
     file_paths = Path(_a.data_dir).glob('*.json')
 
     for fpath in file_paths:
-        data = json.load(open(str(fpath)))['data']
+        js = json.load(open(str(fpath)))
+        data = js['data']
         ax = plt.gca()
-        for scheme in data: ax.plot(data[scheme], label=scheme)
+        
+        freq = js['loss_eval_freq']
+        for scheme in data:
+            series = data[scheme]
+            iter_ind = np.array(range(len(series)))*freq
+            workers = list(zip(*series))
+            line, = ax.plot(iter_ind, workers[0], label=scheme)
+            for ss in workers[1:]: ax.plot(iter_ind, ss, color=line.get_color()) 
+
         ax.legend(loc='best')
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Loss')
@@ -24,7 +34,7 @@ def main():
                                 '%s%s.%s'%(fpath.stem,prf,_a.ext))
 
         plt.savefig(get_path(''), bbox_inches='tight')
-        length = max(len(data[scheme]) for scheme in data)
+        length = max(len(data[scheme])*freq for scheme in data)
 
         ax.set_xlim(int(_a.xlimper*length), length)
         autoscale_y(ax)

@@ -42,15 +42,18 @@ def get_data(is_identical):
     x_train, y_train = permute(*get_mnist())
     y_train1h = to_1hot(y_train)
 
-    if is_identical:
-        for duo in zip(np.split(x_train, 10), np.split(y_train1h, 10)):
-            yield duo
-    else:
-        indss = [y_train==cls for cls in range(10)]
-        #count = min(inds.sum() for inds in indss)
-        for inds in indss:
-            #yield x_train[inds][:count], y_train1h[inds][:count]
-            yield x_train[inds], y_train1h[inds]
+    def gen():
+        if is_identical:
+            for duo in zip(np.split(x_train, 10), np.split(y_train1h, 10)):
+                yield duo
+        else:
+            indss = [y_train==cls for cls in range(10)]
+            #count = min(inds.sum() for inds in indss)
+            for inds in indss:
+                #yield x_train[inds][:count], y_train1h[inds][:count]
+                yield x_train[inds], y_train1h[inds]
+
+    return gen(), (x_train, y_train1h)
 
 
 def main():
