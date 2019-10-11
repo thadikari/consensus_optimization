@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from tensorflow import keras
 import numpy as np
 import os
@@ -38,29 +39,93 @@ def permute(x_, y_, seed=None):
     return x_[p], y_[p]
 
 
-def get_data(is_identical):
+def process_data():
     x_train, y_train = permute(*get_mnist())
     y_train1h = to_1hot(y_train)
+    Q_global = Distribution((x_train, y_train1h))
+    return x_train, y_train, y_train1h, Q_global
 
-    def gen():
-        if is_identical:
-            for duo in zip(np.split(x_train, 10), np.split(y_train1h, 10)):
-                yield duo
+
+class Distribution:
+    def __init__(self, xy_): self.xy_ = xy_
+    def size(self): return len(self.xy_[0])
+
+    def summary(self):
+        summ = np.unique(np.argmax(self.xy_[1], axis=1), return_counts=1)
+        return dict(zip(*summ))
+
+    def sample(self, size):
+        if size>0:
+            tot = len(self.xy_[0])
+            inds = np.random.choice(tot, size=size)
+            return [z_[inds] for z_ in self.xy_]
         else:
-            indss = [y_train==cls for cls in range(10)]
-            #count = min(inds.sum() for inds in indss)
-            for inds in indss:
-                #yield x_train[inds][:count], y_train1h[inds][:count]
-                yield x_train[inds], y_train1h[inds]
+            return self.xy_
 
-    return gen(), (x_train, y_train1h)
+
+dist_types = OrderedDict()
+get_type_names = lambda: list(dist_types.keys())
+get_type = lambda name: dist_types[name]()
+
+def register_(tp):
+    assert(tp.__name__ not in dist_types)
+    dist_types[tp.__name__] = tp
+    return tp
+
+
+@register_
+def identical_10():
+    x_, y_, y1h_, Q_global = process_data()
+    locals = [Distribution((x_, y_)) for _ in range(10)]
+    return locals, Q_global
+
+
+@register_
+def distinct_10():
+    x_, y_, y1h_, Q_global = process_data()
+    indss = [y_==cls for cls in range(10)]
+    #count = min(inds.sum() for inds in indss)
+    locals = [Distribution((x_[inds], y1h_[inds])) for inds in indss]
+    return locals, Q_global
+
+
+# 'PQQQ', 'QPQQ', 'QQPQ', 'QQQP'
+def type_1_3(position_of_P):
+    x_, y_, y1h_, _ = process_data()
+    indss = [y_==cls for cls in range(4)]
+
+    make_dist = lambda ind_: Distribution((x_[ind_], y1h_[ind_]))
+
+    P_ = make_dist(indss[0])
+    Q_ = make_dist(np.logical_or.reduce(indss[1:]))
+    Q_global = make_dist(np.logical_or.reduce(indss))
+
+    locals = [Q_]*4
+    locals[position_of_P] = P_
+    return locals, Q_global
+
+for i in range(4):
+    name = list('QQQQ')
+    name[i] = 'P'
+    tp = lambda: type_1_3(i)
+    tp.__name__ = ''.join(name)
+    register_(tp)
 
 
 def main():
-    identical = 0
-    assert(60000==sum(len(y_) for x_, y_ in get_data(identical)))
-    for x_, y_ in get_data(identical):
+    locals, Q_global = type_1_3(2)
+    for Q_ in locals: print(Q_.size())
+    for Q_ in locals: print(Q_.summary())
+
+    print(get_type_names())
+    print(get_type('QPQQ'))
+
+    locals, Q_global = distinct_10()
+    assert(60000==sum(len(Q_.sample(-1)[0]) for Q_ in locals))
+    for i in range(len(locals)):
+        x_, y_ = locals[i].sample(-1)
         assert(len(x_)==len(y_))
+        assert(np.all(np.argmax(y_, axis=1)==i))
         print(x_.shape, y_.shape)
 
 
