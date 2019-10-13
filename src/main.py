@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 
-import mnist as dist
+import distribution as dist
 from graphs import make_doubly_stoch, graph_defs
 
 
@@ -126,6 +126,9 @@ def main():
         W_ = make_doubly_stoch(graph_defs[_a.graph_def], _a.doubly_stoch)
         mat_P = np.linalg.matrix_power(W_, _a.num_consensus_rounds)
         assert(numw==len(W_))
+
+    eigs = np.sort(np.linalg.eig(mat_P)[0])
+    print('Largest 2 eigenvalues:', eigs[-2:])
 
     w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=eval.get_size())
     sc = lambda comb: Scheme(workers, w_init, mat_P, comb, Q_global)
