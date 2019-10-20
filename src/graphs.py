@@ -24,13 +24,26 @@ def make_adja_mat_edges(dim, edges, bidir=True):
 
 
 graph_defs = {
-    'wk_10': make_adja_mat_not_edges(10,
+    'rand_10': make_adja_mat_not_edges(10,
     ((0,1), (0,3), (0,5), (0,9), (1,4), (1,5), (1,8),
      (2,4), (2,7), (2,6), (3,5), (3,6), (3,7),
      (4,6), (4,7), (4,9), (5,8), (6,7), (6,9), (7,8), (8,9))),
-    'wk_4': make_adja_mat_edges(4,
+    'amb_iclr_10': make_adja_mat_edges(10,
+    ((0,1),(0,5),(0,9),
+     (1,2),(1,3),(1,6),(1,7),(1,9),
+     (2,3),
+     (3,5),(3,7),
+     (4,5),
+     (5,8),(5,9),
+     (6,7),
+     (8,9))),
+    'antenna_4': make_adja_mat_edges(4,
     ((0,1),(1,2),(1,3),(3,2)))
 }
+
+
+# in increasing order
+eig_vals = lambda P_: -np.sort(-np.linalg.eig(P_)[0])
 
 
 # Boyd - Distributed Average Consensus with Time-Varying MetropolisWeights
@@ -75,18 +88,25 @@ def doubly_stoch_from_not_edges(not_edges, dim, method):
 # https://stackoverflow.com/questions/44271504/given-an-adjacency-matrix-how-to-draw-a-graph-with-matplotlib
 # https://networkx.github.io/documentation/networkx-1.7/reference/generated/networkx.convert.from_numpy_matrix.html
 # https://stackoverflow.com/questions/29572623/plot-networkx-graph-from-adjacency-matrix-in-csv-file
-def plot(A_):
+def draw(A_):
     import matplotlib.pyplot as plt
     import networkx as nx
 
-    G_ = nx.from_numpy_matrix(A_)
-    nx.draw_spring(G_)
+    G = nx.from_numpy_matrix(A_)
+    vrts = list(range(len(A_)))
+    labels = {i:str(i) for i in vrts}
+    # nx.draw_spring(G, labels=labels)
+    pos = dict(zip(vrts,np.array([vrts, np.array(vrts)+10]).T))
+    nx.draw(G, nx.spring_layout(G, pos=pos), labels=labels)
     plt.axis('equal')
-    plt.show()
+
+    print(eig_vals(make_doubly_stoch(A_, 'metro')))
+
+    return plt
 
 
 def main():
-    plot(default_defs['wk_4'])
+    draw(graph_defs['amb_iclr_10']).show()
     # plot(graph_defs['wk_10'])
 
 
