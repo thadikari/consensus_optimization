@@ -14,3 +14,13 @@
 
 ### Graph vs. distribution
 * `python main.py --data_dist PQQQ --graph_def wk_4 --consensus rand_walk --num_consensus_rounds 5 --strag_dist equal --num_samples 64 --grad_combine Equal --weights_seed 99 --save --loss_eval_freq 10`
+
+
+### Compare variances of "equal weighting" and "proportional weighting"
+* `python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 200 --gauss_max_std 400`
+* `python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 60 --gauss_max_std 120`
+
+* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 1`
+* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 30`
+* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 50`
+* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 200 --bern_min 50`

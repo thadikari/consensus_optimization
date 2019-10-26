@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from cycler import cycler
 from pathlib import Path
 import numpy as np
+import matplotlib
 import argparse
 import json
 import os
@@ -13,6 +14,10 @@ import graphs
 custom_cycler = (cycler(color=['r', 'b', 'g', 'y']) +
                  cycler(linestyle=['-', '--', ':', '-.']))
 plt.rc('axes', prop_cycle=custom_cycler)
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+matplotlib.rcParams.update({'font.size': 14})
+
 
 def main():
 
@@ -55,6 +60,7 @@ def main():
         plt.gcf().set_size_inches(6.8,3)
         plt.tight_layout()
         plt.grid(alpha=0.7, linestyle='-.', linewidth=0.3)
+        ax.tick_params(axis='x', labelsize=12)
         # xlabels = [('%d'%x) + 'k' for x in ax.get_xticks()/1000]
         # ax.set_xticklabels(xlabels)
         if _a.ylog: ax.set_yscale('log')
