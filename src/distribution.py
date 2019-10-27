@@ -1,20 +1,13 @@
-from collections import OrderedDict
+from utils import Registry
 
 
-dist_types = OrderedDict()
-get_type_names = lambda: list(dist_types.keys())
-get_type = lambda name: dist_types[name]()
-
-
-def register_(tp):
-    assert(tp.__name__ not in dist_types)
-    dist_types[tp.__name__] = tp
-    return tp
+reg = Registry()
+register_ = reg.register
 
 
 def test():
-    print(get_type_names())
-    print(get_type('QPQQ'))
+    print(reg.keys())
+    print(reg.get('QPQQ'))
 
 
 import dist_mnist, dist_toy

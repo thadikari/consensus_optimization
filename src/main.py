@@ -1,62 +1,13 @@
 # -*- coding: future_fstrings -*-
 
-import tensorflow as tf
 import numpy as np
 import argparse
 import json
 import os
 
+import function
 import distribution as dist
 from graphs import make_doubly_stoch, graph_defs, eig_vals
-
-
-pl = lambda sh_: tf.compat.v1.placeholder(tf.float32, shape=sh_)
-
-# create a single parameter vector and split it to a bunch of vars
-def params(*shapes):
-    size_ = lambda shape: shape if isinstance(shape, int) else shape[0]*shape[1]
-    w_ = pl(sum([size_(shape) for shape in shapes]))
-    ret, start = [w_], 0
-    for shape in shapes:
-        vv = w_[start : start+size_(shape)]
-        if not isinstance(shape, int): vv = tf.compat.v1.reshape(vv,shape)
-        ret.append(vv)
-    return ret
-
-
-class Evaluator:
-    def __init__(self):
-        self.pl_x = pl((None, 784))
-        self.pl_y = pl((None, 10))
-        self.pl_w, self.loss = self.func(self.pl_x, self.pl_y)
-        self.w_len = self.pl_w.get_shape().as_list()[0]
-        self.grad = tf.gradients(self.loss, self.pl_w)[0]
-        self.sess = tf.compat.v1.Session()
-
-    def func(self, x_, y_):
-        if _a.func=='linear0':
-            w_, w, b = params((784,10), 10)
-            logits = x_@w+b
-        elif _a.func=='linear1':
-            w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-            logits = (x_@w1+b1)@w2+b2
-        elif _a.func=='relu1':
-            w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-            logits = tf.nn.relu(x_@w1+b1)@w2+b2
-
-        sm = tf.nn.softmax_cross_entropy_with_logits_v2
-        #return tf.reduce_mean(tf.square(logits - y_))
-        # return tf.reduce_mean(tf.reduce_sum(sm(y_, logits), axis=1))
-        return w_, tf.reduce_mean(sm(y_, logits)) #+ 0.0001*tf.tensordot(w_,w_,1)
-
-    def get_size(self):
-        return self.w_len
-
-    def eval(self, w_, xy_):
-        x_, y_ = xy_
-        dd = {self.pl_w:w_, self.pl_x:x_, self.pl_y:y_}
-        loss, grad = self.sess.run([self.loss, self.grad], feed_dict=dd)
-        return loss, grad
 
 
 class Worker:
@@ -86,12 +37,13 @@ class Worker:
 
 
 def grad_combine_equal(grads, num_samples):
-    return grads #*len(grads)/len(grads)
+    ## assuming \gamma_i * len(grads) = 1
+    return grads # should ideally be (len(grads)*gamma)*grads
 
 def grad_combine_conf(grads, num_samples):
-    confs = num_samples/sum(num_samples)
-    # print(num_samples)
-    return confs[:, np.newaxis]*grads*len(grads)
+    confs = len(grads)*num_samples/sum(num_samples)
+    # print(confs)
+    return confs[:, np.newaxis]*grads
 
 
 class Scheme():
@@ -131,8 +83,8 @@ def main():
     run_id = f'run_{_a.func}_{_a.data_dist}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
     print('run_id:', run_id)
 
-    eval = Evaluator()
-    Q_local_list, Q_global = dist.get_type(_a.data_dist)
+    eval = function.reg.get(_a.func)()
+    Q_local_list, Q_global = dist.reg.get(_a.data_dist)()
     workers = [Worker(eval, Q_local) for Q_local in Q_local_list]
     numw = len(workers)
 
@@ -192,9 +144,9 @@ def plot(schemes):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_dist', help='data distributions scheme', choices=dist.get_type_names())
+    parser.add_argument('--data_dist', help='data distributions scheme', choices=dist.reg.keys())
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
-    parser.add_argument('--func', help='x->y function', choices=['linear0', 'linear1', 'relu1'])
+    parser.add_argument('--func', help='x->y function', choices=function.reg.keys())
 
     parser.add_argument('--consensus', default='perfect', choices=['perfect', 'rand_walk'])
     parser.add_argument('--num_consensus_rounds', help='num_consensus_rounds', type=int, default=10)
