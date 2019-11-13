@@ -103,6 +103,35 @@ v_ = lambda v: e_((v-e_(v))**2)
 lmth = lambda s_: r'$%s$'%s_
 
 
+def cond():
+    n = _a.n_wkr
+    shape = (_a.trials, n)
+    dst = registry[_a.dist]()
+    bis = dst.func(dst.sam_prm, shape)
+    b = bis.sum(axis=1)
+
+    data = []
+    for i in range(n,n*100):
+        curr = bis[b==i]
+        # print(i, curr)
+        if len(curr)>0:
+            b1 = curr[:,0]
+            b2 = curr[:,1]
+            # print(i, e_(b1*b2))
+            ll = (i/n)**2, e_(b1**2), e_(b1*b2)
+            data.append((i, *ll))
+
+    le_ = lambda nu: lmth(r'\mathbb{\rm E}\left[%s\mid b \right]'%nu)
+    lbls = [lmth('(b/n)^2'), le_('b_i^2'), le_('b_i b_j')]
+    xv, *srs = list(zip(*data))
+    for sr,lbl in zip(srs,lbls):
+        # print(xv, sr)
+        plt.plot(xv, sr, label=lbl)
+    plt.xlabel(lmth('b'))
+    plt.legend(loc='best')
+    plt.show()
+
+
 def main():
     n = _a.n_wkr
     shape = (_a.trials, n)
