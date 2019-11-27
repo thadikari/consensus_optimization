@@ -2,7 +2,7 @@ from utils import Registry
 
 
 reg = Registry()
-register_ = reg.register
+register_ = reg.reg
 
 
 def test():

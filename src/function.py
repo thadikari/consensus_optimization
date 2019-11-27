@@ -6,7 +6,7 @@ reg = Registry()
 def register_(func):
     inner = lambda: Evaluator(func)
     inner.__name__ = func.__name__
-    reg.register(inner)
+    reg.reg(inner)
 
 
 pl = lambda sh_: tf.compat.v1.placeholder(tf.float32, shape=sh_)

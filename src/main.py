@@ -5,9 +5,10 @@ import argparse
 import json
 import os
 
-import function
-import distribution as dist
 from graphs import make_doubly_stoch, graph_defs, eig_vals
+import distribution as dist
+import function
+import utils
 
 
 class Worker:
@@ -46,11 +47,38 @@ def grad_combine_conf(grads, num_samples):
     return confs[:, np.newaxis]*grads
 
 
-class Scheme():
-    def __init__(self, workers, w_init, mat_P, grad_combine, Q_global):
-        self.workers = workers
+class Optimizer:
+    def set(self, mat_P, grad_combine):
         self.comb = grad_combine
-        self.mat_P = mat_P
+        self.cons = lambda arr: mat_P@arr
+        return self
+
+class GradientDescent(Optimizer):
+    def __init__(self, shape): pass
+    def apply(self, w_, g_, numsam, lrate):
+        w_[:] -= lrate*self.cons(self.comb(g_, numsam))
+
+class GradientDescent1(Optimizer):
+    def __init__(self, shape): pass
+    def apply(self, w_, g_, numsam, lrate):
+        w_[:] = self.cons(w_ - lrate*self.comb(g_, numsam))
+
+class DualAveraging(Optimizer):
+    def __init__(self, shape): self.z_ = np.zeros(shape)
+    def apply(self, w_, g_, numsam, lrate):
+        self.z_[:] = self.cons(self.z_) + self.comb(g_, numsam)
+        w_[:] = -lrate*(self.z_)
+
+opts = utils.Registry()
+opts.put('gd', GradientDescent)
+opts.put('gd1', GradientDescent)
+opts.put('da', DualAveraging)
+
+
+class Scheme:
+    def __init__(self, workers, w_init, Q_global, core_opt):
+        self.workers = workers
+        self.core_opt = core_opt
         self.Q_global = Q_global
 
         numw = len(workers)
@@ -73,14 +101,14 @@ class Scheme():
         for i in range(len(self.workers)):
             worker_out = self.workers[i].compute_grad(self.curr_w[i])
             _, self.curr_g[i], self.curr_numsam[i] = worker_out
-        self.curr_w -= lrate*self.mat_P@self.comb(self.curr_g, self.curr_numsam)
+        self.core_opt.apply(self.curr_w, self.curr_g, self.curr_numsam, lrate)
 
 
 grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_conf}
 
 
 def main():
-    run_id = f'run_{_a.func}_{_a.data_dist}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
+    run_id = f'run_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
     print('run_id:', run_id)
 
     eval = function.reg.get(_a.func)()
@@ -100,7 +128,8 @@ def main():
 
 
     w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=eval.get_size())
-    sc = lambda comb: Scheme(workers, w_init, mat_P, comb, Q_global)
+    sc = lambda comb: Scheme(workers, w_init, Q_global,
+                        opts.get(_a.opt)([numw, len(w_init)]).set(mat_P, comb))
     schemes = {name:sc(grad_combine_schemes[name]) for name in _a.grad_combine}
 
     for t in range(_a.num_iters):
@@ -147,6 +176,7 @@ def parse_args():
     parser.add_argument('--data_dist', help='data distributions scheme', choices=dist.reg.keys())
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
     parser.add_argument('--func', help='x->y function', choices=function.reg.keys())
+    parser.add_argument('--opt', help='optimizer', choices=opts.keys())
 
     parser.add_argument('--consensus', default='perfect', choices=['perfect', 'rand_walk'])
     parser.add_argument('--num_consensus_rounds', help='num_consensus_rounds', type=int, default=10)

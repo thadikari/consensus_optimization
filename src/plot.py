@@ -7,16 +7,11 @@ import argparse
 import json
 import os
 
-# from autoscale import autoscale_y
 import graphs
+import utils
 
 
-custom_cycler = (cycler(color=['r', 'b', 'g', 'y']) +
-                 cycler(linestyle=['-', '--', ':', '-.']))
-plt.rc('axes', prop_cycle=custom_cycler)
-matplotlib.rcParams['mathtext.fontset'] = 'stix'
-matplotlib.rcParams['font.family'] = 'STIXGeneral'
-matplotlib.rcParams.update({'font.size': 14})
+utils.mpl_init()
 
 
 def main():
@@ -66,11 +61,6 @@ def main():
         if _a.ylog: ax.set_yscale('log')
         savefig('')
 
-        # length = max(len(data[scheme])*freq for scheme in data)
-        # ax.set_xlim(int(_a.xlimper*length), length)
-        # autoscale_y(ax)
-        # savefig('__zoomed')
-
         if _a.show: plt.show()
         plt.cla()
 
@@ -85,7 +75,6 @@ def parse_args():
     parser.add_argument('--no_dots', help='remove . from file name', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
     parser.add_argument('--num_iters', help='number of iterations', type=int, default=-1)
-    # parser.add_argument('--xlimper', help='xlim starting percentage', type=float, default=0.5)
     return parser.parse_args()
 
 
