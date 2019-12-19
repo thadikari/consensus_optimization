@@ -17,10 +17,13 @@
 
 
 ### Compare variances of "equal weighting" and "proportional weighting"
-* `python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 200 --gauss_max_std 400`
-* `python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 60 --gauss_max_std 120`
-
-* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 1`
-* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 30`
-* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 50`
-* `python straggler_dist_stats.py bern --trials 1000000 --bern_max 200 --bern_min 50`
+* Sample commands:
+```
+python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 200 --gauss_max_std 400
+python straggler_dist_stats.py gauss --trials 1000000 --gauss_loc 60 --gauss_max_std 120
+python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 1
+python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 30
+python straggler_dist_stats.py bern --trials 1000000 --bern_max 60 --bern_min 50
+python straggler_dist_stats.py bern --trials 1000000 --bern_max 200 --bern_min 50
+```
+* Change content in [`plot_dist_mu2.sh`](plot_dist_mu2.sh) and execute to generate all plots.
