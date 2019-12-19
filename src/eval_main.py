@@ -47,44 +47,58 @@ def grad_combine_conf(grads, num_samples):
     return confs[:, np.newaxis]*grads
 
 
+opts = utils.Registry()
+reg_ = lambda name: (lambda cls: opts.put(name, cls))
+
 class Optimizer:
-    def set(self, mat_P, grad_combine):
+    def __init__(self, w_init, mat_P, grad_combine):
+        self.w_init = w_init
+        self.numw = len(mat_P)
         self.comb = grad_combine
         self.cons = lambda arr: mat_P@arr
-        return self
+    def init(self): return self
 
-class GradientDescent(Optimizer):
-    def __init__(self, shape): pass
+@reg_('PG')
+class GradientDescent_PG(Optimizer):
+    def initw(self, w_):
+        for wi in w_: w_[:] = self.w_init
     def apply(self, w_, g_, numsam, lrate):
         w_[:] -= lrate*self.cons(self.comb(g_, numsam))
 
-class GradientDescent1(Optimizer):
-    def __init__(self, shape): pass
+@reg_('PWG')
+class GradientDescent_PWG(Optimizer):
+    def initw(self, w_):
+        for wi in w_: w_[:] = self.w_init
     def apply(self, w_, g_, numsam, lrate):
         w_[:] = self.cons(w_ - lrate*self.comb(g_, numsam))
 
-class DualAveraging(Optimizer):
-    def __init__(self, shape): self.z_ = np.zeros(shape)
+@reg_('PW')
+class GradientDescent_DA(Optimizer):
+    def initw(self, w_): w_[:] = 0
+    def apply(self, w_, g_, numsam, lrate):
+        w_[:] = self.cons(w_) - lrate*self.comb(g_, numsam)
+
+@reg_('DA')
+class DualAveraging_CL(Optimizer):
+    def init(self):
+        self.z_ = np.zeros([self.numw, len(self.w_init)])
+        return self
+    def initw(self, w_): w_[:] = 0
     def apply(self, w_, g_, numsam, lrate):
         self.z_[:] = self.cons(self.z_) + self.comb(g_, numsam)
         w_[:] = -lrate*(self.z_)
 
-opts = utils.Registry()
-opts.put('gd', GradientDescent)
-opts.put('gd1', GradientDescent)
-opts.put('da', DualAveraging)
-
 
 class Scheme:
-    def __init__(self, workers, w_init, Q_global, core_opt):
+    def __init__(self, workers, dim_w, Q_global, core_opt):
         self.workers = workers
         self.core_opt = core_opt
         self.Q_global = Q_global
 
         numw = len(workers)
-        self.curr_w = np.zeros([numw, len(w_init)])
-        for i in range(numw): self.curr_w[i] = w_init
-        self.curr_g = np.zeros([numw, len(w_init)])
+        self.curr_w = np.zeros([numw, dim_w])
+        self.core_opt.initw(self.curr_w)
+        self.curr_g = np.zeros_like(self.curr_w)
         self.curr_numsam = np.zeros(numw)
 
         self.history = []
@@ -127,9 +141,10 @@ def main():
         assert(numw==len(W_))
 
 
-    w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=eval.get_size())
-    sc = lambda comb: Scheme(workers, w_init, Q_global,
-                        opts.get(_a.opt)([numw, len(w_init)]).set(mat_P, comb))
+    dim_w = eval.get_size()
+    w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=dim_w)
+    sc = lambda comb: Scheme(workers, dim_w, Q_global,
+                        opts.get(_a.opt)(w_init, mat_P, comb).init())
     schemes = {name:sc(grad_combine_schemes[name]) for name in _a.grad_combine}
 
     for t in range(_a.num_iters):
