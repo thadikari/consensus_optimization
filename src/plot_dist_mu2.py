@@ -103,14 +103,43 @@ v_ = lambda v: e_((v-e_(v))**2)
 lmth = lambda s_: r'$%s$'%s_
 
 
+def cond():
+    n = _a.n_wkr
+    shape = (_a.trials, n)
+    dst = registry[_a.dist]()
+    bis = dst.func(dst.sam_prm, shape)
+    b = bis.sum(axis=1)
+
+    data = []
+    for i in range(n,n*100):
+        curr = bis[b==i]
+        # print(i, curr)
+        if len(curr)>0:
+            b1 = curr[:,0]
+            b2 = curr[:,1]
+            # print(i, e_(b1*b2))
+            ll = (i/n)**2, e_(b1**2), e_(b1*b2)
+            data.append((i, *ll))
+
+    le_ = lambda nu: lmth(r'\mathbb{\rm E}\left[%s\mid b \right]'%nu)
+    lbls = [lmth('(b/n)^2'), le_('b_i^2'), le_('b_i b_j')]
+    xv, *srs = list(zip(*data))
+    for sr,lbl in zip(srs,lbls):
+        # print(xv, sr)
+        plt.plot(xv, sr, label=lbl)
+    plt.xlabel(lmth('b'))
+    plt.legend(loc='best')
+    plt.show()
+
+
 def main():
     n = _a.n_wkr
     shape = (_a.trials, n)
     dst = registry[_a.dist]()
 
+    data_dir = os.path.join(os.path.dirname(__file__),'..','data', _a.data_dir)
     save = lambda sfx: plt.savefig(fname(sfx), bbox_inches='tight')
-    fname = lambda sfx: os.path.join(_a.data_dir, '%s__%s%s.%s'%\
-                                        (_a.dist,dst.name,sfx,_a.ext))
+    fname = lambda sfx: os.path.join(data_dir, '%s__%s%s.%s'%(_a.dist,dst.name,sfx,_a.ext))
     plt.gcf().set_size_inches(_a.fig_size)
 
     # plot histogram for sample data
@@ -138,26 +167,23 @@ def main():
         b1 = bis[:,0]
         b2 = bis[:,1]
 
-        mu4 = e_((b1/b)**2)
-        mu5 = e_((b1*b2)/(b**2))
-        exp = (#e_((n*b1)/b),
-               e_(1/b1), e_(b1*((n/b)**2)),
-               #n*mu4, (n**2-n)*mu5,
-               #n*mu4 + (n**2-n)*mu5
-               )
+        mu2 = e_(1/b1)
+        n2mu3 = e_(b1*((n/b)**2))
+        # mu4 = e_((b1/b)**2)
+        # mu5 = e_((b1*b2)/(b**2))
+        va4 = v_(n*b1/b)
+        dtild = (mu2-n2mu3)/va4
+        exp = (mu2, n2mu3, n2mu3+ _a.scal*va4)#, va4, dtild)
         data.append(exp)
 
-    le_ = lambda nu,dn: r'\mathbb{\rm E}\left[\frac{%s}{%s}\right]'%(nu,dn)
+    le_ = lambda nu,dn,OP='E': r'\mathbb{\rm %s}\left[\frac{%s}{%s}\right]'%(OP,nu,dn)
     lf_ = lambda n_,mu,nu,dn: lmth('%s\mu_%d = %s%s'%(n_,mu,n_,le_(nu,dn)))
-    labels = (#lf_('n',1, 'b_i','b'),
-              lf_('',2, '1','b_i'), lf_('n^2',3, 'b_i','b^2'),
-              #lf_('n',4, 'b_i^2','b^2'),
-              #lf_('(n^2-n)',5, 'b_i b_j','b^2'),
-              #r'$\mu_6=n\mu_4 + (n^2-n)\mu_5$'
-              #lmth('n\mu_4 + (n^2-n)\mu_5'),
-              #lmth('n\mu_4 + (n^2-n)\mu_5=') + '\n' +
-              #lmth('n%s + (n^2-n)%s'%(le_('b_i^2','b^2'),le_('b_i b_j','b^2')))
-              )
+    l_mu2 = lf_('',2, '1','b_i')
+    l_n2mu3 = lf_('n^2',3, 'b_i','b^2')
+    # l_mu4 = lf_('n',4, 'b_i^2','b^2')
+    # l_mu5 = lf_('(n^2-n)',5, 'b_i b_j','b^2')
+    l_va4 = lmth(le_('nb_i','b','Var'))
+    labels = (l_mu2, l_n2mu3, lmth('n^2 \mu_3+ %g'%_a.scal)+l_va4, l_va4, 'dtild')
 
     data = np.array(data).T
     for sr,label in zip(data, labels):
@@ -181,6 +207,7 @@ def parse_args():
     parser.add_argument('--trials', help='number of trials for monte-carlo', type=int, default=100)
     parser.add_argument('--n_wkr', help='number of workers', type=int, default=10)
     parser.add_argument('--n_xpts', help='x-axis granularity', type=int, default=30)
+    parser.add_argument('--scal', help='scalar multiplier for comparison', type=float, default=0.01)
 
 
     parser.add_argument('--gauss_loc', type=int, default=60)
@@ -207,7 +234,7 @@ def parse_args():
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
     parser.add_argument('--save', help='save plots', action='store_true')
     parser.add_argument('--ext', help='extention', default='png', choices=['png', 'pdf'])
-    parser.add_argument('--data_dir', default='../data/current')
+    parser.add_argument('--data_dir', default='current')
     return parser.parse_args()
 
 
