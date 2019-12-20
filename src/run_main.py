@@ -72,6 +72,12 @@ class GradientDescent_PWG(Optimizer):
     def apply(self, w_, g_, numsam, lrate):
         w_[:] = self.cons(w_ - lrate*self.comb(g_, numsam))
 
+@reg_('PWG1')
+class GradientDescent_PWG(Optimizer):
+    def initw(self, w_): w_[:] = 0
+    def apply(self, w_, g_, numsam, lrate):
+        w_[:] = self.cons(w_ - lrate*self.comb(g_, numsam))
+
 @reg_('PW')
 class GradientDescent_DA(Optimizer):
     def initw(self, w_): w_[:] = 0
@@ -172,18 +178,6 @@ def main():
                 dd['data'] = {scheme:schemes[scheme].history for scheme in schemes}
                 json.dump(dd, fp_, indent=4)
 
-    if _a.plot: plot(schemes)
-
-
-def plot(schemes):
-    import matplotlib.pyplot as plt
-    ax = plt.gca()
-    for scheme in schemes: ax.plot(schemes[scheme].history, label=scheme)
-    ax.legend(loc='best')
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Loss')
-    plt.show()
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -207,8 +201,7 @@ def parse_args():
     parser.add_argument('--lrate_start', help='start learning rate', type=float, default=0.1)
     parser.add_argument('--lrate_end', help='end learning rate', type=float, default=0.01)
 
-    parser.add_argument('--data_dir', default='/scratch/s/sdraper/tharindu/conce')
-    parser.add_argument('--plot', help='plot at the end', action='store_true')
+    parser.add_argument('--data_dir', default=os.path.join(os.environ.get('SCRATCH', '.'), 'consensus'))
     parser.add_argument('--save', help='save json', action='store_true')
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)
     parser.add_argument('--loss_eval_freq', help='evaluate global loss frequency', type=int, default=20)
