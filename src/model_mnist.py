@@ -5,6 +5,9 @@ import os
 import model
 
 
+reg = model.ModelReg()
+
+
 '''
 download mnist data
 '''
@@ -52,12 +55,12 @@ def process_data():
 definitions for distributions
 '''
 from model import DistClassification as Dist
-reg_dist = model.reg_dist.reg
+reg_dist = reg.reg_dist.reg
 
 @reg_dist
 def identical_10():
     x_, y_, y1h_, Q_global = process_data()
-    locals = [Dist((x_, y_)) for _ in range(10)]
+    locals = [Dist((x_, y1h_)) for _ in range(10)]
     return locals, Q_global
 
 
@@ -117,7 +120,7 @@ from model import params
 
 def reg_func(func):
     lam = lambda: Eval(func, 784, 10)
-    model.reg_func.put(func.__name__, lam)
+    reg.reg_func.put(func.__name__, lam)
     return func
 
 @reg_func

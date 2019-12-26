@@ -7,7 +7,16 @@ from utils import Registry
 '''
 abstract/common definitions for distributions
 '''
-reg_dist = Registry()
+reg = Registry()
+
+class ModelReg:
+    def __init__(self):
+        self.reg_dist = Registry()
+        self.reg_func = Registry()
+
+    def bind(self, parser):
+        parser.add_argument('data_dist', help='data distributions', choices=self.reg_dist.keys())
+        parser.add_argument('func', help='function', choices=self.reg_func.keys())
 
 
 # for typical in-memory classification datasets like mnist
@@ -37,7 +46,6 @@ def test_dist():
 '''
 abstract/common definitions for functions
 '''
-reg_func = Registry()
 
 
 plhd = lambda sh_: tf.placeholder(tf.float32, shape=sh_)
@@ -98,7 +106,10 @@ def test_func():
 
 
 
-import model_mnist, model_mnist
+import model_mnist, model_toy
+reg.put('mnist', model_mnist)
+reg.put('toy', model_toy)
+
 
 if __name__ == '__main__':
     test_dist()

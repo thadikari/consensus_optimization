@@ -15,7 +15,6 @@ class Worker:
         self.eval = eval
         self.Q_local = Q_local
 
-    # def get_local_loss(self, weights): return self.eval.eval(weights, *self.Q_local.sample(-1))[0]
     def compute_loss(self, weights, Q_):
         return float(self.eval.eval(weights, Q_.sample(-1))[0])
 
@@ -127,11 +126,12 @@ grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_
 
 
 def main():
-    run_id = f'run_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
+    run_id = f'run_{_a.model}_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
     print('run_id:', run_id)
 
-    eval = model.reg_func.get(_a.func)()
-    Q_local_list, Q_global = model.reg_dist.get(_a.data_dist)()
+    reg = model.reg.get(_a.model).reg
+    eval = reg.reg_func.get(_a.func)()
+    Q_local_list, Q_global = reg.reg_dist.get(_a.data_dist)()
     workers = [Worker(eval, Q_local) for Q_local in Q_local_list]
     numw = len(workers)
 
@@ -181,10 +181,11 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument('--model', help='data distributions and function', choices=dist.reg.keys())
-    parser.add_argument('--data_dist', help='data distributions scheme', choices=model.reg_dist.keys())
+    # parser.add_argument('--model', help='data distributions and function', choices=model.reg.keys())
+    subparsers = parser.add_subparsers(dest='model', help='data distributions and function')
+    for key,mod in model.reg.items(): mod.reg.bind(subparsers.add_parser(key, help=key))
+
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
-    parser.add_argument('--func', help='x->y function', choices=model.reg_func.keys())
     parser.add_argument('--opt', help='optimizer', choices=opts.keys())
 
     parser.add_argument('--consensus', default='perfect', choices=['perfect', 'rand_walk'])
