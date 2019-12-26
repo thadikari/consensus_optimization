@@ -2,9 +2,13 @@ from tensorflow import keras
 import numpy as np
 import os
 
-from distribution import register_
+from distribution import register_ as reg_dist
+from distribution import DistClassification as Dist
 
 
+'''
+download mnist data
+'''
 def get_mnist():
     # Keras automatically creates a cache directory in ~/.keras/datasets for
     # storing the downloaded MNIST data. This creates a race
@@ -28,17 +32,14 @@ def get_mnist():
     # assert len(x_test) == len(y_test)
     return x_train, y_train
 
-
 def to_1hot(a):
     b = np.zeros((a.size, a.max()+1))
     b[np.arange(a.size),a] = 1
     return b
 
-
 def permute(x_, y_, seed=None):
     p = np.random.RandomState(seed=seed).permutation(len(x_))
     return x_[p], y_[p]
-
 
 def process_data():
     x_train, y_train = permute(*get_mnist())
@@ -47,31 +48,18 @@ def process_data():
     return x_train, y_train, y_train1h, Q_global
 
 
-class Dist:
-    def __init__(self, xy_): self.xy_ = xy_
-    def size(self): return len(self.xy_[0])
 
-    def summary(self):
-        summ = np.unique(np.argmax(self.xy_[1], axis=1), return_counts=1)
-        return dict(zip(*summ))
-
-    def sample(self, size):
-        if size>0:
-            tot = len(self.xy_[0])
-            inds = np.random.choice(tot, size=size)
-            return [z_[inds] for z_ in self.xy_]
-        else:
-            return self.xy_
-
-
-@register_
+'''
+definitions for distributions
+'''
+@reg_dist
 def identical_10():
     x_, y_, y1h_, Q_global = process_data()
     locals = [Dist((x_, y_)) for _ in range(10)]
     return locals, Q_global
 
 
-@register_
+@reg_dist
 def distinct_10():
     x_, y_, y1h_, Q_global = process_data()
     indss = [y_==cls for cls in range(10)]
@@ -100,10 +88,10 @@ for i in range(4):
     name[i] = 'P'
     tp = lambda: type_1_3(i)
     tp.__name__ = ''.join(name)
-    register_(tp)
+    reg_dist(tp)
 
 
-def test():
+def test_distrb():
     locals, Q_global = type_1_3(2)
     for Q_ in locals: print(Q_.size())
     for Q_ in locals: print(Q_.summary())
@@ -117,4 +105,34 @@ def test():
         print(x_.shape, y_.shape)
 
 
-if __name__ == '__main__': test()
+
+'''
+definitions for functions
+'''
+import function
+from function import params
+
+
+def reg_func(func):
+    lam = lambda: function.EvalClassification(func, 784, 10)
+    function.reg.put(func.__name__, lam)
+    return func
+
+@reg_func
+def linear0(x_):
+    w_, w, b = params((784,10), 10)
+    return w_, x_@w+b
+
+@reg_func
+def linear1(x_):
+    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
+    return w_, (x_@w1+b1)@w2+b2
+
+@reg_func
+def relu1(x_):
+    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
+    return w_, tf.nn.relu(x_@w1+b1)@w2+b2
+
+
+
+if __name__ == '__main__': test_distrb()

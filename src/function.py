@@ -3,9 +3,6 @@ from utils import Registry
 
 
 reg = Registry()
-def register_(func):
-    reg.put(func.__name__, lambda: Evaluator(func))
-    return func
 
 
 plhd = lambda sh_: tf.placeholder(tf.float32, shape=sh_)
@@ -25,10 +22,13 @@ def params(*shapes):
     return ret
 
 
-class Evaluator:
-    def __init__(self, func):
-        self.pl_x = plhd((None, 784))
-        self.pl_y = plhd((None, 10))
+# for typical regression problems
+
+# for typical classification problems like mnist
+class EvalClassification:
+    def __init__(self, func, dim_inp, dim_out):
+        self.pl_x = plhd((None, dim_inp))
+        self.pl_y = plhd((None, dim_out))
         self.pl_w, logits_ = func(self.pl_x)
         self.loss = tf.reduce_mean(smax(self.pl_y, logits_, reduction='none'))
         self.w_len = self.pl_w.get_shape().as_list()[0]
@@ -43,22 +43,6 @@ class Evaluator:
         dd = {self.pl_w:w_, self.pl_x:x_, self.pl_y:y_}
         loss, grad = self.sess.run([self.loss, self.grad], feed_dict=dd)
         return loss, grad
-
-
-@register_
-def linear0(x_):
-    w_, w, b = params((784,10), 10)
-    return w_, x_@w+b
-
-@register_
-def linear1(x_):
-    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-    return w_, (x_@w1+b1)@w2+b2
-
-@register_
-def relu1(x_):
-    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-    return w_, tf.nn.relu(x_@w1+b1)@w2+b2
 
 
 if __name__ == '__main__':
