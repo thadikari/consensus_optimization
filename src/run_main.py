@@ -6,8 +6,7 @@ import json
 import os
 
 from graphs import make_doubly_stoch, graph_defs, eig_vals
-import distribution as dist
-import function
+import model
 import utils
 
 
@@ -131,8 +130,8 @@ def main():
     run_id = f'run_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
     print('run_id:', run_id)
 
-    eval = function.reg.get(_a.func)()
-    Q_local_list, Q_global = dist.reg.get(_a.data_dist)()
+    eval = model.reg_func.get(_a.func)()
+    Q_local_list, Q_global = model.reg_dist.get(_a.data_dist)()
     workers = [Worker(eval, Q_local) for Q_local in Q_local_list]
     numw = len(workers)
 
@@ -182,9 +181,10 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_dist', help='data distributions scheme', choices=dist.reg.keys())
+    # parser.add_argument('--model', help='data distributions and function', choices=dist.reg.keys())
+    parser.add_argument('--data_dist', help='data distributions scheme', choices=model.reg_dist.keys())
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
-    parser.add_argument('--func', help='x->y function', choices=function.reg.keys())
+    parser.add_argument('--func', help='x->y function', choices=model.reg_func.keys())
     parser.add_argument('--opt', help='optimizer', choices=opts.keys())
 
     parser.add_argument('--consensus', default='perfect', choices=['perfect', 'rand_walk'])

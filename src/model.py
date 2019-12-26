@@ -1,8 +1,43 @@
 import tensorflow as tf
+import numpy as np
+
 from utils import Registry
 
 
-reg = Registry()
+'''
+abstract/common definitions for distributions
+'''
+reg_dist = Registry()
+
+
+# for typical in-memory classification datasets like mnist
+class DistClassification:
+    def __init__(self, xy_): self.xy_ = xy_
+    def size(self): return len(self.xy_[0])
+
+    def summary(self):
+        summ = np.unique(np.argmax(self.xy_[1], axis=1), return_counts=1)
+        return dict(zip(*summ))
+
+    def sample(self, size):
+        if size>0:
+            tot = len(self.xy_[0])
+            inds = np.random.choice(tot, size=size)
+            return [z_[inds] for z_ in self.xy_]
+        else:
+            return self.xy_
+
+
+def test_dist():
+    print(reg.keys())
+    print(reg.get('QPQQ'))
+
+
+
+'''
+abstract/common definitions for functions
+'''
+reg_func = Registry()
 
 
 plhd = lambda sh_: tf.placeholder(tf.float32, shape=sh_)
@@ -45,7 +80,7 @@ class EvalClassification:
         return loss, grad
 
 
-if __name__ == '__main__':
+def test_func():
     '''
     Test for @params function. Should print the following.
     [0. 1. 2. 3. 4. 5. 6. 7. 8.]
@@ -60,3 +95,11 @@ if __name__ == '__main__':
         lenw = w_.get_shape().as_list()[0]
         output = ss.run([w_, w1, w2, w3], feed_dict={w_:range(lenw)})
         print(*output, sep = '\n')
+
+
+
+import model_mnist, model_mnist
+
+if __name__ == '__main__':
+    test_dist()
+    test_func()

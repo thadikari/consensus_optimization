@@ -2,8 +2,7 @@ from tensorflow import keras
 import numpy as np
 import os
 
-from distribution import register_ as reg_dist
-from distribution import DistClassification as Dist
+import model
 
 
 '''
@@ -52,6 +51,9 @@ def process_data():
 '''
 definitions for distributions
 '''
+from model import DistClassification as Dist
+reg_dist = model.reg_dist.reg
+
 @reg_dist
 def identical_10():
     x_, y_, y1h_, Q_global = process_data()
@@ -109,13 +111,13 @@ def test_distrb():
 '''
 definitions for functions
 '''
-import function
-from function import params
+from model import EvalClassification as Eval
+from model import params
 
 
 def reg_func(func):
-    lam = lambda: function.EvalClassification(func, 784, 10)
-    function.reg.put(func.__name__, lam)
+    lam = lambda: Eval(func, 784, 10)
+    model.reg_func.put(func.__name__, lam)
     return func
 
 @reg_func
