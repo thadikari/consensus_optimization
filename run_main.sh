@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EXEC="python -u src/run_main.py --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 10000 --num_samples 60"
+EXEC="python -u src/run_main.py --model mnist --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 10000 --num_samples 60"
 
 log () { echo "$1"; }
 run () { log ">> $1"; eval "$1" & }

@@ -181,9 +181,9 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument('--model', help='data distributions and function', choices=model.reg.keys())
-    subparsers = parser.add_subparsers(dest='model', help='data distributions and function')
-    for key,mod in model.reg.items(): mod.reg.bind(subparsers.add_parser(key, help=key))
+    parser.add_argument('--model', help='model name', choices=model.reg.keys())
+    parser.add_argument('--data_dist', help='data distributions scheme', choices=model.all_dists())
+    parser.add_argument('--func', help='x->y function', choices=model.all_funcs())
 
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
     parser.add_argument('--opt', help='optimizer', choices=opts.keys())
@@ -207,7 +207,11 @@ def parse_args():
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)
     parser.add_argument('--loss_eval_freq', help='evaluate global loss frequency', type=int, default=20)
 
-    return parser.parse_args()
+    _a = parser.parse_args()
+    args = _a.model, _a.data_dist, _a.func
+    if not model.is_valid_model(*args):
+        parser.error('Invalid dist/func combination for model: %s'%str(args))
+    return _a
 
 
 if __name__ == '__main__':

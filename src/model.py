@@ -8,15 +8,17 @@ from utils import Registry
 abstract/common definitions for distributions
 '''
 reg = Registry()
+make_set = lambda lam_: sorted(set(k_ for v_ in reg.values() for k_ in lam_(v_.reg).keys()))
+all_dists = lambda: make_set(lambda v_:v_.reg_dist)
+all_funcs = lambda: make_set(lambda v_:v_.reg_func)
+def is_valid_model(model, dist, func):
+    return (dist in reg.get(model).reg.reg_dist.keys()) and\
+           (func in reg.get(model).reg.reg_func.keys())
 
 class ModelReg:
     def __init__(self):
         self.reg_dist = Registry()
         self.reg_func = Registry()
-
-    def bind(self, parser):
-        parser.add_argument('data_dist', help='data distributions', choices=self.reg_dist.keys())
-        parser.add_argument('func', help='function', choices=self.reg_func.keys())
 
 
 # for typical in-memory classification datasets like mnist
@@ -36,17 +38,14 @@ class DistClassification:
         else:
             return self.xy_
 
-
 def test_dist():
     print(reg.keys())
     print(reg.get('QPQQ'))
 
 
-
 '''
 abstract/common definitions for functions
 '''
-
 
 plhd = lambda sh_: tf.placeholder(tf.float32, shape=sh_)
 smax = tf.compat.v1.losses.softmax_cross_entropy
@@ -68,12 +67,12 @@ def params(*shapes):
 # for typical regression problems
 
 # for typical classification problems like mnist
-class EvalClassification:
+class Evaluator:
     def __init__(self, func, dim_inp, dim_out):
         self.pl_x = plhd((None, dim_inp))
         self.pl_y = plhd((None, dim_out))
         self.pl_w, logits_ = func(self.pl_x)
-        self.loss = tf.reduce_mean(smax(self.pl_y, logits_, reduction='none'))
+        self.loss = tf.reduce_mean(self.compute_loss(self.pl_y, logits_))
         self.w_len = self.pl_w.get_shape().as_list()[0]
         self.grad = tf.gradients(self.loss, self.pl_w)[0]
         self.sess = tf.compat.v1.Session()
@@ -86,6 +85,14 @@ class EvalClassification:
         dd = {self.pl_w:w_, self.pl_x:x_, self.pl_y:y_}
         loss, grad = self.sess.run([self.loss, self.grad], feed_dict=dd)
         return loss, grad
+
+class EvalClassification(Evaluator):
+    def compute_loss(self, label, logits):
+        return smax(label, logits, reduction='none')
+
+class EvalBinaryClassification(Evaluator):
+    def compute_loss(self, label, logits):
+        return tf.nn.sigmoid_cross_entropy_with_logits(labels=label, logits=logits)
 
 
 def test_func():
@@ -103,7 +110,6 @@ def test_func():
         lenw = w_.get_shape().as_list()[0]
         output = ss.run([w_, w1, w2, w3], feed_dict={w_:range(lenw)})
         print(*output, sep = '\n')
-
 
 
 import model_mnist, model_toy
