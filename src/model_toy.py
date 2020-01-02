@@ -3,7 +3,7 @@ import model
 
 
 reg = model.ModelReg()
-
+reg.add_arg(('toy_sigma2', {'help':'variance within distributions', 'type':float}))
 
 '''
 definitions for distributions
@@ -12,7 +12,7 @@ reg_dist = reg.reg_dist.reg
 
 
 class Dist:
-    def __init__(self, mu, sigma2, label, n_class, ret1h=True):
+    def __init__(self, mu, sigma2, label, n_class, ret1h):
         self.mu = mu
         self.cov = np.eye(len(mu))*sigma2
         self.label = label
@@ -56,19 +56,23 @@ def plot_distrb(locals, Q_global):
     plt.show()
 
 
-def distinct_n(mus, ret1h):
-    locals = [Dist(mus[i], .01, i, len(mus), ret1h) for i in range(len(mus))]
+def distinct_n(mus, ret1h=True):
+    locals = [Dist(mus[i], reg.arg_dict['toy_sigma2'], i, len(mus), ret1h) for i in range(len(mus))]
     return locals, QGlobal(locals)
 
 @reg_dist
-def distinct_2(): return distinct_n([[1,1], [-1,-1]], 0)
+def distinct_2_2(): return distinct_n([[1,1], [-1,-1]], False)
 
 @reg_dist
-def distinct_4(): return distinct_n([[1,0], [0,1], [-1,0], [0,-1]], 1)
+def distinct_4_3(): return distinct_n([[1,1,1], [1,-1,-1], [-1,1,-1], [-1,-1,1]])
+
+@reg_dist
+def distinct_4_2(): return distinct_n([[1,0], [0,1], [-1,0], [0,-1]])
 
 
 def test_distrb():
-    dists = distinct_2()
+    reg.arg_dict['toy_sigma2'] = 0.1
+    dists = distinct_2_2()
     plot_distrb(*dists)
     locals, Q_global = dists
     print(Q_global.sample(-1))
@@ -94,7 +98,12 @@ def linear2(x_):
     w_, w = params((2,1))
     return w_, x_@w
 
-@reg_func(2,2)
+@reg_func(3,4)
+def linear3(x_):
+    w_, w, b = params((3,4), 4)
+    return w_, x_@w
+
+@reg_func(2,4)
 def linear4(x_):
     w_, w, b = params((2,4), 4)
     return w_, x_@w+b

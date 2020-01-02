@@ -19,6 +19,24 @@ class ModelReg:
     def __init__(self):
         self.reg_dist = Registry()
         self.reg_func = Registry()
+        self.arg_defs = []
+        self.arg_dict = {}
+
+    def add_arg(self, arg):
+        self.arg_defs.append(arg)
+
+def store_args(_a):
+    arg_dict = vars(_a)
+    for mod in reg.values():
+        for arg_def in mod.reg.arg_defs:
+            name = arg_def[0]
+            mod.reg.arg_dict[name] = arg_dict[name]
+
+def bind_args(parser):
+    for mod in reg.values():
+        for arg_def in mod.reg.arg_defs:
+            name, kwargs = arg_def
+            parser.add_argument('--%s'%name, **kwargs)
 
 
 # for typical in-memory classification datasets like mnist

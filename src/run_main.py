@@ -126,7 +126,8 @@ grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_
 
 
 def main():
-    run_id = f'run_{_a.model}_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}'
+    extra = '' if _a.extra is None else '__%s'%_a.extra
+    run_id = f'run_{_a.model}_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}{extra}'
     print('run_id:', run_id)
 
     reg = model.reg.get(_a.model).reg
@@ -173,7 +174,7 @@ def main():
             with open(os.path.join(_a.data_dir, '%s.json'%run_id), 'w') as fp_:
                 dd = vars(_a)
                 dd['numw'] = numw
-                dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist()
+                dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist() if _a.graph_def else None
                 dd['data'] = {scheme:schemes[scheme].history for scheme in schemes}
                 json.dump(dd, fp_, indent=4)
 
@@ -204,13 +205,16 @@ def parse_args():
 
     parser.add_argument('--data_dir', default=os.path.join(os.environ.get('SCRATCH', '.'), 'consensus'))
     parser.add_argument('--save', help='save json', action='store_true')
+    parser.add_argument('--extra', help='unique string for json name', type=str)
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)
     parser.add_argument('--loss_eval_freq', help='evaluate global loss frequency', type=int, default=20)
 
+    model.bind_args(parser)
     _a = parser.parse_args()
     args = _a.model, _a.data_dist, _a.func
     if not model.is_valid_model(*args):
         parser.error('Invalid dist/func combination for model: %s'%str(args))
+    model.store_args(_a)
     return _a
 
 
