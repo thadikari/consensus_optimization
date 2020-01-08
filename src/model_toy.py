@@ -56,6 +56,18 @@ def plot_distrb(locals, Q_global):
     plt.show()
 
 
+def require(*arg_names):
+    def inner(func):
+        def wrapper(*args, **kwargs):
+            for name in arg_names:
+                if reg.arg_dict.get(name, None) is None:
+                    raise ValueError('Missing required argument: %s'%name)
+            return func(*args, **kwargs)
+        return wrapper
+    return inner
+
+
+@require('toy_sigma2')
 def distinct_n(mus, ret1h=True):
     locals = [Dist(mus[i], reg.arg_dict['toy_sigma2'], i, len(mus), ret1h) for i in range(len(mus))]
     return locals, QGlobal(locals)
@@ -101,7 +113,7 @@ def linear2(x_):
 @reg_func(3,4)
 def linear3(x_):
     w_, w, b = params((3,4), 4)
-    return w_, x_@w
+    return w_, x_@w+b
 
 @reg_func(2,4)
 def linear4(x_):

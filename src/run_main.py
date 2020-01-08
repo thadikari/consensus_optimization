@@ -115,11 +115,17 @@ class Scheme:
         self.history.append(losses)
         return sum(losses)/len(losses)
 
-    def step(self, lrate):
+    def compute_grads(self):
         for i in range(len(self.workers)):
             worker_out = self.workers[i].compute_grad(self.curr_w[i])
             _, self.curr_g[i], self.curr_numsam[i] = worker_out
-        self.core_opt.apply(self.curr_w, self.curr_g, self.curr_numsam, lrate)
+        return self.curr_g, self.curr_numsam
+
+    def get_avg_grad(self):
+        return np.mean(self.core_opt.comb(*self.compute_grads()), axis=0)
+
+    def step(self, lrate):
+        self.core_opt.apply(self.curr_w, *self.compute_grads(), lrate)
 
 
 grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_conf}
@@ -151,9 +157,9 @@ def main():
     w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=dim_w)
     sc = lambda comb: Scheme(workers, dim_w, Q_global,
                         opts.get(_a.opt)(w_init, mat_P, comb).init())
-    schemes = {name:sc(grad_combine_schemes[name]) for name in _a.grad_combine}
+    schemes = [sc(grad_combine_schemes[name]) for name in _a.grad_combine]
 
-    for t in range(_a.num_iters):
+    def prep_stragglers():
         ## set number of samples each worker is processing
         for i in range(numw):
             if _a.strag_dist=='round':
@@ -164,18 +170,20 @@ def main():
                 numsam = -1
             workers[i].prep_straggler(numsam)
 
+    for t in range(_a.num_iters):
+        prep_stragglers()
         lrate = _a.lrate_start -  (_a.lrate_start-_a.lrate_end)*t/_a.num_iters
-        for scheme in schemes: schemes[scheme].step(lrate)
+        for scheme in schemes: scheme.step(lrate)
         if t%_a.loss_eval_freq==0:
-            print('(%d):'%t, {scheme:schemes[scheme].eval_global_losses()
-                                             for scheme in schemes})
+            print('(%d):'%t, {name:scheme.eval_global_losses()
+                              for name,scheme in zip(_a.grad_combine,schemes)})
 
         if t%_a.save_freq==0 and _a.save:
             with open(os.path.join(_a.data_dir, '%s.json'%run_id), 'w') as fp_:
                 dd = vars(_a)
                 dd['numw'] = numw
                 dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist() if _a.graph_def else None
-                dd['data'] = {scheme:schemes[scheme].history for scheme in schemes}
+                dd['data'] = {name:scheme.history for name,scheme in zip(_a.grad_combine,schemes)}
                 json.dump(dd, fp_, indent=4)
 
 
