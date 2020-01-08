@@ -106,6 +106,7 @@ class Scheme:
         self.curr_numsam = np.zeros(numw)
 
         self.history = []
+        self.var_history = []
         self.eval_global_losses()
 
     def eval_global_losses(self):
@@ -126,6 +127,27 @@ class Scheme:
 
     def step(self, lrate):
         self.core_opt.apply(self.curr_w, *self.compute_grads(), lrate)
+
+
+class SchemeVar:
+    def __init__(self, schemes, dim_w, num_var_samples):
+        self.schemes = schemes
+        self.num_var_samples = num_var_samples
+        self.arrays = [np.zeros([num_var_samples,dim_w]) for scheme in schemes]
+
+    def evaluate(self, prep_stragglers):
+        for i in range(self.num_var_samples):
+            prep_stragglers()
+            for arr,scheme in zip(self.arrays, self.schemes):
+                arr[i,:] = scheme.get_avg_grad()
+
+        def eval_var(arr):
+            diffs = arr-np.mean(arr,axis=0,keepdims=True)
+            return np.mean(np.sum(diffs**2, axis=1))
+
+        values = [eval_var(arr) for arr in self.arrays]
+        for scheme,val in zip(self.schemes,values): scheme.var_history.append(val)
+        return values
 
 
 grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_conf}
@@ -170,20 +192,27 @@ def main():
                 numsam = -1
             workers[i].prep_straggler(numsam)
 
+    schemevar = SchemeVar(schemes, dim_w, _a.num_var_samples) if _a.eval_grad_var else None
+    name_zip = lambda ll: zip(_a.grad_combine,ll)
+
     for t in range(_a.num_iters):
+        if schemevar and t%_a.var_eval_freq==0:
+            values = schemevar.evaluate(prep_stragglers)
+            print('schemevar:', {name:var_ for name,var_ in name_zip(values)})
+
         prep_stragglers()
         lrate = _a.lrate_start -  (_a.lrate_start-_a.lrate_end)*t/_a.num_iters
         for scheme in schemes: scheme.step(lrate)
         if t%_a.loss_eval_freq==0:
-            print('(%d):'%t, {name:scheme.eval_global_losses()
-                              for name,scheme in zip(_a.grad_combine,schemes)})
+            print('(%d):'%t, {name:scheme.eval_global_losses() for name,scheme in name_zip(schemes)})
 
         if t%_a.save_freq==0 and _a.save:
             with open(os.path.join(_a.data_dir, '%s.json'%run_id), 'w') as fp_:
                 dd = vars(_a)
-                dd['numw'] = numw
+                dd['num_workers'] = numw
                 dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist() if _a.graph_def else None
-                dd['data'] = {name:scheme.history for name,scheme in zip(_a.grad_combine,schemes)}
+                dd['data'] = {name:scheme.history for name,scheme in name_zip(schemes)}
+                dd['variance'] = {name:scheme.var_history for name,scheme in name_zip(schemes)}
                 json.dump(dd, fp_, indent=4)
 
 
@@ -206,7 +235,11 @@ def parse_args():
     parser.add_argument('--num_samples', help='num_samples in each sampling method', type=int, default=60)
     parser.add_argument('--grad_combine', help='grad_combine schemes', nargs='+', default=list(grad_combine_schemes.keys()), choices=grad_combine_schemes.keys())
 
+    parser.add_argument('--eval_grad_var', help='compute variance of gradients', action='store_true')
+    parser.add_argument('--num_var_samples', help='num. samples for variance computation', type=int, default=10000)
+    parser.add_argument('--var_eval_freq', help='frequency of variance computation', type=int, default=20)
     parser.add_argument('--weights_seed', help='seed for generating init weights', type=int)
+
     parser.add_argument('--num_iters', help='total iterations count', type=int, default=1000)
     parser.add_argument('--lrate_start', help='start learning rate', type=float, default=0.1)
     parser.add_argument('--lrate_end', help='end learning rate', type=float, default=0.01)

@@ -12,14 +12,43 @@ import utils
 
 
 utils.mpl_init()
+reg = utils.Registry()
+register = reg.reg
+
+def fmt_ax(ax, xlab, ylab, leg):
+    if leg: ax.legend(loc='best')
+    ax.set_xlabel(xlab)
+    ax.set_ylabel(ylab)
+    ax.grid(alpha=0.7, linestyle='-.', linewidth=0.3)
+    ax.tick_params(axis='both', labelsize=12)
+    if _a.ylog: ax.set_yscale('log')
+    if _a.xlog: ax.set_xscale('log')
 
 
 def main():
+    file_paths = list(Path(_a.data_dir).glob('*.json'))
+    jss = list(json.load(open(str(fpath))) for fpath in file_paths)
+    reg.get(_a.type)(file_paths,jss)
 
-    file_paths = Path(_a.data_dir).glob('*.json')
+
+@register
+def plot_var(_, jss):
+    keys = ['Equal', 'Proportional']
+    data = [(js['toy_sigma2'], [js['variance'][key][0] for key in keys]) for js in jss]
+    data.sort(key=lambda x_: x_[0])
+    variance, serieses = zip(*data)
+    serieses = list(zip(*serieses))
+    ax = plt.gca()
+    for key,series in zip(keys,serieses): ax.plot(variance, series, label=key)
+    fmt_ax(ax, r'$\sigma^2$', r'$\mathbb{V}(\bar{g})$', 1)
+    path = os.path.join(_a.data_dir, '%s.%s'%(_a.name,_a.ext))
+    plt.savefig(path, bbox_inches='tight')
+    if _a.show: plt.show()
+
+@register
+def plot_all(*args):
     proc_stem = lambda stem: stem.replace('.','') if _a.no_dots else stem
-    for fpath in file_paths:
-        js = json.load(open(str(fpath)))
+    for fpath,js in zip(*args):
         get_path = lambda prf: os.path.join(str(fpath.parents[0]),
                         '%s%s.%s'%(proc_stem(fpath.stem),prf,_a.ext))
         savefig = lambda arg: plt.savefig(get_path(arg), bbox_inches='tight')
@@ -49,16 +78,11 @@ def main():
                 for i in range(len(workers)):
                     ax.plot(iter_ind, proc_data(workers[i]), label='Wkr%d'%i)
 
-        ax.legend(loc='best')
-        ax.set_xlabel('Iteration')
-        ax.set_ylabel('Cost')
+        fmt_ax(ax, 'Iteration', 'Cost', 1)
         plt.gcf().set_size_inches(6.8,3)
         plt.tight_layout()
-        plt.grid(alpha=0.7, linestyle='-.', linewidth=0.3)
-        ax.tick_params(axis='x', labelsize=12)
         # xlabels = [('%d'%x) + 'k' for x in ax.get_xticks()/1000]
         # ax.set_xticklabels(xlabels)
-        if _a.ylog: ax.set_yscale('log')
         savefig('')
 
         if _a.show: plt.show()
@@ -67,12 +91,15 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--type', default='plot_all', choices=reg.keys())
     parser.add_argument('--data_dir', default='../data/current')
     parser.add_argument('--ext', help='file extension', default='png', choices=['png', 'pdf'])
+    parser.add_argument('--name', help='save name', type=str)
     parser.add_argument('--show', help='plot at the end', action='store_true')
     parser.add_argument('--graph', help='plot at the end', action='store_true')
     parser.add_argument('--all_workers', help='plot all workers', action='store_true')
     parser.add_argument('--no_dots', help='remove . from file name', action='store_true')
+    parser.add_argument('--xlog', help='log axis for x', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
     parser.add_argument('--num_iters', help='number of iterations', type=int, default=-1)
     return parser.parse_args()
