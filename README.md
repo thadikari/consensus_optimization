@@ -26,7 +26,7 @@ python plot_dist_mu2.py gauss --trials 1000000 --gauss_loc 200 --gauss_max_std 4
 python plot_dist_mu2.py exp --trials 1000000 --exp_max 60 --exp_max_scale 15
 ```
 * Change content in [`plot_dist_mu2.sh`](plot_dist_mu2.sh) and execute to generate all plots.
-* See results at [`data\archive9_theoretically_compare_equal_vs_proportional_upper_bnds`](data\archive9_theoretically_compare_equal_vs_proportional_upper_bnds).
+* See results at [`data/archive9_theoretically_compare_equal_vs_proportional_upper_bnds`](data/archive9_theoretically_compare_equal_vs_proportional_upper_bnds).
 
 ### Computing variance of the gradients given by two methods
 * Run `python run_main.py --model toy --opt PG --consensus perfect --grad_combine Equal Proportional --save --weights_seed 1 --eval_grad_var --num_iters 1 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --func linear3 --data_dist distinct_4_3 --toy_sigma2 10.0`.
