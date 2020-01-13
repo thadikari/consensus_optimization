@@ -1,24 +1,20 @@
 import matplotlib.pyplot as plt
-from cycler import cycler
 import numpy as np
 import matplotlib
 import argparse
 import os
 
+import utils
 
-#https://stackoverflow.com/questions/11367736/matplotlib-consistent-font-using-latex
-default_cycler = (cycler(color=['r', 'b', 'g', 'y', 'k']) +
-                  cycler(linestyle=['-', '--', ':', '-.', '-']))
+
+utils.mpl_init()
 plt.rc('lines', linewidth=2)
-plt.rc('axes', prop_cycle=default_cycler)
-matplotlib.rcParams['mathtext.fontset'] = 'stix'
-matplotlib.rcParams['font.family'] = 'STIXGeneral'
 # matplotlib.rcParams.update({'font.size': 14})
 # ax.tick_params(axis='x', labelsize=12)
 
 
-registry = {}
-def register_(tp): registry[tp.__name__] = tp
+reg = utils.Registry()
+register_ = reg.reg
 
 
 class Dist:
@@ -106,7 +102,7 @@ lmth = lambda s_: r'$%s$'%s_
 def cond():
     n = _a.n_wkr
     shape = (_a.trials, n)
-    dst = registry[_a.dist]()
+    dst = reg.get(_a.dist)()
     bis = dst.func(dst.sam_prm, shape)
     b = bis.sum(axis=1)
 
@@ -135,7 +131,7 @@ def cond():
 def main():
     n = _a.n_wkr
     shape = (_a.trials, n)
-    dst = registry[_a.dist]()
+    dst = reg.get(_a.dist)()
 
     data_dir = os.path.join(os.path.dirname(__file__),'..','data', _a.data_dir)
     save = lambda sfx: plt.savefig(fname(sfx), bbox_inches='tight')
@@ -203,7 +199,7 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('dist', help='type of distribution', choices=list(registry.keys()))
+    parser.add_argument('dist', help='type of distribution', choices=reg.keys())
     parser.add_argument('--trials', help='number of trials for monte-carlo', type=int, default=100)
     parser.add_argument('--n_wkr', help='number of workers', type=int, default=10)
     parser.add_argument('--n_xpts', help='x-axis granularity', type=int, default=30)

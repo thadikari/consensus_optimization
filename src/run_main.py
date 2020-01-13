@@ -195,24 +195,25 @@ def main():
     schemevar = SchemeVar(schemes, dim_w, _a.num_var_samples) if _a.eval_grad_var else None
     name_zip = lambda ll: zip(_a.grad_combine,ll)
 
+    dd = vars(_a)
+    dd['num_workers'] = numw
+    dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist() if _a.graph_def else None
+    dd['data'] = {name:scheme.history for name,scheme in name_zip(schemes)}
+    dd['variance'] = {name:scheme.var_history for name,scheme in name_zip(schemes)}
+
     for t in range(_a.num_iters):
         if schemevar and t%_a.var_eval_freq==0:
             values = schemevar.evaluate(prep_stragglers)
             print('schemevar:', {name:var_ for name,var_ in name_zip(values)})
 
         prep_stragglers()
-        lrate = _a.lrate_start -  (_a.lrate_start-_a.lrate_end)*t/_a.num_iters
+        lrate = _a.lrate_start - (_a.lrate_start-_a.lrate_end)*t/_a.num_iters
         for scheme in schemes: scheme.step(lrate)
         if t%_a.loss_eval_freq==0:
             print('(%d):'%t, {name:scheme.eval_global_losses() for name,scheme in name_zip(schemes)})
 
         if t%_a.save_freq==0 and _a.save:
             with open(os.path.join(_a.data_dir, '%s.json'%run_id), 'w') as fp_:
-                dd = vars(_a)
-                dd['num_workers'] = numw
-                dd['graph_adja_mat'] = graph_defs[_a.graph_def].tolist() if _a.graph_def else None
-                dd['data'] = {name:scheme.history for name,scheme in name_zip(schemes)}
-                dd['variance'] = {name:scheme.var_history for name,scheme in name_zip(schemes)}
                 json.dump(dd, fp_, indent=4)
 
 
@@ -244,7 +245,7 @@ def parse_args():
     parser.add_argument('--lrate_start', help='start learning rate', type=float, default=0.1)
     parser.add_argument('--lrate_end', help='end learning rate', type=float, default=0.01)
 
-    parser.add_argument('--data_dir', default=os.path.join(os.environ.get('SCRATCH', '.'), 'consensus'))
+    parser.add_argument('--data_dir', default=utils.resolve_data_dir('consensus'))
     parser.add_argument('--save', help='save json', action='store_true')
     parser.add_argument('--extra', help='unique string for json name', type=str)
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)

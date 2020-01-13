@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
-from cycler import cycler
 from pathlib import Path
 import numpy as np
-import matplotlib
 import argparse
 import json
 import os
@@ -15,14 +13,10 @@ utils.mpl_init()
 reg = utils.Registry()
 register = reg.reg
 
-def fmt_ax(ax, xlab, ylab, leg):
-    if leg: ax.legend(loc='best')
-    ax.set_xlabel(xlab)
-    ax.set_ylabel(ylab)
-    ax.grid(alpha=0.7, linestyle='-.', linewidth=0.3)
-    ax.tick_params(axis='both', labelsize=12)
-    if _a.ylog: ax.set_yscale('log')
-    if _a.xlog: ax.set_xscale('log')
+def fmt_ax(*args, **kwargs):
+    utils.fmt_ax(*args, **kwargs)
+    if _a.ylog: args[0].set_yscale('log')
+    if _a.xlog: args[0].set_xscale('log')
 
 
 def main():
@@ -92,7 +86,7 @@ def plot_all(*args):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--type', default='plot_all', choices=reg.keys())
-    parser.add_argument('--data_dir', default='../data/current')
+    parser.add_argument('--data_dir', default=os.path.join('..','data','current'))
     parser.add_argument('--ext', help='file extension', default='png', choices=['png', 'pdf'])
     parser.add_argument('--name', help='save name', type=str)
     parser.add_argument('--show', help='plot at the end', action='store_true')
