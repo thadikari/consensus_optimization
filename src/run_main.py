@@ -1,5 +1,3 @@
-# -*- coding: future_fstrings -*-
-
 import numpy as np
 import argparse
 import json
@@ -157,6 +155,7 @@ def main():
     extra = '' if _a.extra is None else '__%s'%_a.extra
     run_id = f'run_{_a.model}_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}{extra}'
     print('run_id:', run_id)
+    if not os.path.exists(_a.data_dir): os.makedirs(_a.data_dir)
 
     reg = model.reg.get(_a.model).reg
     eval = reg.reg_func.get(_a.func)()

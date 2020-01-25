@@ -14,7 +14,7 @@ reg_dist = reg.reg_dist.reg
 class Dist:
     def __init__(self, mu, sigma2, label, n_class, ret1h):
         self.mu = mu
-        self.cov = np.eye(len(mu))*sigma2
+        self.cov = np.eye(len(mu))*sigma2*len(mu)
         self.label = label
         self.n_class = n_class
         self.ret1h = ret1h

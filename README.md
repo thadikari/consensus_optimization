@@ -1,9 +1,9 @@
 # Consensus optimization - ICASSP '20
 
 ## Generating data:
-* `python run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
-* `python run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
-* `python run_main.py --model mnist --data_dist distinct_10 --func relu1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func relu1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
 * Change accordingly and execute [`run_main.sh`](run_main.sh) to parallelly run all simulations.
 
 ## Generating plots:

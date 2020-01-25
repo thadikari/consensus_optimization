@@ -35,23 +35,20 @@ def plot_var(_, jss):
     ax = plt.gca()
     for key,series in zip(keys,serieses): ax.plot(variance, series, label=key)
     fmt_ax(ax, r'$\sigma^2$', r'$\mathbb{V}(\bar{g})$', 1)
-    path = os.path.join(_a.data_dir, '%s.%s'%(_a.name,_a.ext))
-    plt.savefig(path, bbox_inches='tight')
-    if _a.show: plt.show()
+    utils.save_show_fig(_a, plt, os.path.join(_a.data_dir, _a.name))
 
 @register
 def plot_all(*args):
     proc_stem = lambda stem: stem.replace('.','') if _a.no_dots else stem
     for fpath,js in zip(*args):
-        get_path = lambda prf: os.path.join(str(fpath.parents[0]),
-                        '%s%s.%s'%(proc_stem(fpath.stem),prf,_a.ext))
+        get_path = lambda prf=None: os.path.join(str(fpath.parents[0]),
+                   '%s%s'%(proc_stem(fpath.stem),'' if prf is None else '__%s'%prf))
         savefig = lambda arg: plt.savefig(get_path(arg), bbox_inches='tight')
 
         # visualizing the graph structure
         if _a.graph:
             graphs.draw(np.array(js['graph_adja_mat']))
-            savefig('__graph')
-            if _a.show: plt.show()
+            utils.save_show_fig(_a, plt, get_path('graph'))
             plt.clf()
 
         ax = plt.gca()
@@ -77,25 +74,21 @@ def plot_all(*args):
         plt.tight_layout()
         # xlabels = [('%d'%x) + 'k' for x in ax.get_xticks()/1000]
         # ax.set_xticklabels(xlabels)
-        savefig('')
-
-        if _a.show: plt.show()
+        utils.save_show_fig(_a, plt, get_path())
         plt.cla()
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--type', default='plot_all', choices=reg.keys())
-    parser.add_argument('--data_dir', default=os.path.join('..','data','current'))
-    parser.add_argument('--ext', help='file extension', default='png', choices=['png', 'pdf'])
+    parser.add_argument('--data_dir', default=utils.resolve_data_dir_os('consensus'))
     parser.add_argument('--name', help='save name', type=str)
-    parser.add_argument('--show', help='plot at the end', action='store_true')
-    parser.add_argument('--graph', help='plot at the end', action='store_true')
+    parser.add_argument('--graph', help='plot the graph structure', action='store_true')
     parser.add_argument('--all_workers', help='plot all workers', action='store_true')
     parser.add_argument('--no_dots', help='remove . from file name', action='store_true')
     parser.add_argument('--xlog', help='log axis for x', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
-    parser.add_argument('--num_iters', help='number of iterations', type=int, default=-1)
+    parser.add_argument('--num_iters', help='max iteration to plot', type=int, default=-1)
+    utils.bind_fig_save_args(parser)
     return parser.parse_args()
 
 
