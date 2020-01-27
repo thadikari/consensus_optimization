@@ -1,13 +1,13 @@
 # Consensus optimization - ICASSP '20
 
 ## Generating data:
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func relu1 --opt PG --consensus rand_walk --num_consensus_rounds 70 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus rand_walk --num_consensus_rounds 10 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
+* `python -u run_main.py --model mnist --data_dist distinct_10 --func relu1 --opt PWG --consensus rand_walk --num_consensus_rounds 10 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 10000`
 * Change accordingly and execute [`run_main.sh`](run_main.sh) to parallelly run all simulations.
 
 ## Generating plots:
-* `python plot_run_main.py --ext pdf --ylog --all_workers --num_iters 4000 --no_dots`
+* `python plot_run_main.py --ylog --all_workers --num_iters 10000 --no_dots`
 
 ## Other:
 * `python run_main.py --model mnist --consensus rand_walk --strag_dist round --save --loss_eval_freq 10 --num_consensus_rounds 10 --doubly_stoch metro`

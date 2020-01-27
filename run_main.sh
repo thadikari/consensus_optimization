@@ -18,9 +18,9 @@ ARGS="--func linear1 --consensus perfect --strag_dist equal --grad_combine Equal
 #exc "--opt gd --consensus perfect --strag_dist bern --strag_dist_param 0.8 --grad_combine Equal Proportional"
 
 
-ARGS="--opt PG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --grad_combine Equal Proportional"
+ARGS="--opt PWG --strag_dist bern --strag_dist_param 0.8 --grad_combine Equal Proportional"
 exc "$ARGS --func linear1 --consensus perfect"
-exc "$ARGS --func linear1 --consensus rand_walk --num_consensus_rounds 70"
-exc "$ARGS --func relu1 --consensus rand_walk --num_consensus_rounds 70"
+exc "$ARGS --func linear1 --consensus rand_walk --num_consensus_rounds 10"
+exc "$ARGS --func relu1 --consensus rand_walk --num_consensus_rounds 10"
 
 wait

@@ -70,7 +70,7 @@ smax = tf.compat.v1.losses.softmax_cross_entropy
 
 # create a single parameter vector and split it to a bunch of vars
 def params(*shapes):
-    size_ = lambda shape: shape if isinstance(shape, int) else shape[0]*shape[1]
+    size_ = lambda shape: shape if isinstance(shape, int) else np.prod(shape)
     w_ = plhd(sum([size_(shape) for shape in shapes]))
     ret, start = [w_], 0
     for shape in shapes:
@@ -87,8 +87,9 @@ def params(*shapes):
 # for typical classification problems like mnist
 class Evaluator:
     def __init__(self, func, dim_inp, dim_out):
-        self.pl_x = plhd((None, dim_inp))
-        self.pl_y = plhd((None, dim_out))
+        cr_pl = lambda dim_: ([None]+dim_) if isinstance(dim_, list) else (None, dim_)
+        self.pl_x = plhd(cr_pl(dim_inp))
+        self.pl_y = plhd(cr_pl(dim_out))
         self.pl_w, logits_ = func(self.pl_x)
         self.loss = tf.reduce_mean(self.compute_loss(self.pl_y, logits_))
         self.w_len = self.pl_w.get_shape().as_list()[0]
@@ -130,7 +131,8 @@ def test_func():
         print(*output, sep = '\n')
 
 
-import model_mnist, model_toy
+import model_cifar10, model_mnist, model_toy
+reg.put('cifar10', model_cifar10)
 reg.put('mnist', model_mnist)
 reg.put('toy', model_toy)
 

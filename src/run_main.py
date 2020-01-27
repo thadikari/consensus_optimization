@@ -14,7 +14,7 @@ class Worker:
         self.Q_local = Q_local
 
     def compute_loss(self, weights, Q_):
-        return float(self.eval.eval(weights, Q_.sample(-1))[0])
+        return float(self.eval.eval(weights, Q_.sample(_a.max_loss_eval_size))[0])
 
     def get_num_samples(self):
         if _a.strag_dist=='bern':
@@ -249,6 +249,7 @@ def parse_args():
     parser.add_argument('--extra', help='unique string for json name', type=str)
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)
     parser.add_argument('--loss_eval_freq', help='evaluate global loss frequency', type=int, default=20)
+    parser.add_argument('--max_loss_eval_size', help='batch size to evaluate global loss frequency', type=int, default=-1)
 
     model.bind_args(parser)
     _a = parser.parse_args()
