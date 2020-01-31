@@ -1,13 +1,13 @@
 #!/bin/bash
 
-EXEC="python -u src/run_main.py --model mnist --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 10000 --num_samples 60"
+EXEC="python -u src/run_main.py --model mnist --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 5000 --num_samples 60"
 
 log () { echo "$1"; }
 run () { log ">> $1"; eval "$1" & }
 exc () { run "$EXEC $1"; }
 
 
-ARGS="--func linear1 --consensus perfect --strag_dist equal --grad_combine Equal --opt"
+#ARGS="--func linear1 --consensus perfect --strag_dist equal --grad_combine Equal --opt"
 #exc "$ARGS PG"
 #exc "$ARGS PWG"
 #exc "$ARGS PWG1"

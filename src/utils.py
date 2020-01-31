@@ -37,7 +37,7 @@ def mpl_init(font_size=14, legend_font_size=None):
     import matplotlib
 
     custom_cycler = (cycler(color=['r', 'b', 'g', 'y', 'k']) +
-                     cycler(linestyle=['-', '--', ':', '-.', '-']))
+                     cycler(linestyle=['-', 'dotted', ':', '-.', '-']))
     plt.rc('axes', prop_cycle=custom_cycler)
     matplotlib.rcParams['mathtext.fontset'] = 'stix'
     matplotlib.rcParams['font.family'] = 'STIXGeneral'
