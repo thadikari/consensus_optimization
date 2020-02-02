@@ -90,7 +90,8 @@ class Evaluator:
         cr_pl = lambda dim_: ([None]+dim_) if isinstance(dim_, list) else (None, dim_)
         self.pl_x = plhd(cr_pl(dim_inp))
         self.pl_y = plhd(cr_pl(dim_out))
-        self.pl_w, logits_ = func(self.pl_x)
+        self.pl_w, logits_, *args = func(self.pl_x)
+        self.train_args, self.test_args = args if len(args)>0 else ({}, {})
         self.loss = tf.reduce_mean(self.compute_loss(self.pl_y, logits_))
         self.w_len = self.pl_w.get_shape().as_list()[0]
         self.grad = tf.gradients(self.loss, self.pl_w)[0]
@@ -99,9 +100,10 @@ class Evaluator:
     def get_size(self):
         return self.w_len
 
-    def eval(self, w_, xy_):
+    def eval(self, w_, xy_, testing=False):
         x_, y_ = xy_
-        dd = {self.pl_w:w_, self.pl_x:x_, self.pl_y:y_}
+        dd = {self.pl_w:w_, self.pl_x:x_, self.pl_y:y_,\
+              **(self.test_args if testing else self.train_args)}
         loss, grad = self.sess.run([self.loss, self.grad], feed_dict=dd)
         return loss, grad
 

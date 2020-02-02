@@ -236,7 +236,9 @@ def conv(x_):
                           [5,5,128,256], [5,5,256,512],
                           [2048,128], 128, [128,256], 256,
                           [256,512], 512, [512,10], 10)
-    return w_, conv_net(x_, 0.7, *weights)
+    keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+                                                  # train_dict    # test_dict
+    return w_, conv_net(x_, keep_prob, *weights), {keep_prob:.7}, {keep_prob:1.}
 
 
 

@@ -13,8 +13,8 @@ class Worker:
         self.eval = eval
         self.Q_local = Q_local
 
-    def compute_loss(self, weights, Q_):
-        return float(self.eval.eval(weights, Q_.sample(_a.max_loss_eval_size))[0])
+    def compute_loss(self, weights, samples_):
+        return float(self.eval.eval(weights, samples_, testing=True)[0])
 
     def get_num_samples(self):
         if _a.strag_dist=='bern':
@@ -108,7 +108,8 @@ class Scheme:
         self.eval_global_losses()
 
     def eval_global_losses(self):
-        losses = [wkr.compute_loss(wgt, self.Q_global)
+        samples_ = self.Q_global.sample(_a.max_loss_eval_size)
+        losses = [wkr.compute_loss(wgt, samples_)
                     for wkr, wgt in zip(self.workers, self.curr_w)]
         # print(np.isclose(self.curr_w, self.curr_w[0]).all())
         self.history.append(losses)
@@ -175,7 +176,7 @@ def main():
 
 
     dim_w = eval.get_size()
-    w_init = np.random.RandomState(seed=_a.weights_seed).normal(size=dim_w)
+    w_init = np.random.RandomState(seed=_a.weights_seed).normal(scale=_a.weights_scale, size=dim_w)
     sc = lambda comb: Scheme(workers, dim_w, Q_global,
                         opts.get(_a.opt)(w_init, mat_P, comb).init())
     schemes = [sc(grad_combine_schemes[name]) for name in _a.grad_combine]
@@ -239,6 +240,7 @@ def parse_args():
     parser.add_argument('--num_var_samples', help='num. samples for variance computation', type=int, default=10000)
     parser.add_argument('--var_eval_freq', help='frequency of variance computation', type=int, default=20)
     parser.add_argument('--weights_seed', help='seed for generating init weights', type=int)
+    parser.add_argument('--weights_scale', help='std.dev for initializing normal weights', type=float, default=1.)
 
     parser.add_argument('--num_iters', help='total iterations count', type=int, default=1000)
     parser.add_argument('--lrate_start', help='start learning rate', type=float, default=0.1)
