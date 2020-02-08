@@ -1,8 +1,10 @@
 import numpy as np
-import model
+
+from . import model
 
 
 reg = model.ModelReg()
+model.reg.put('toy_model', reg)
 reg.add_arg(('toy_sigma2', {'help':'variance within distributions', 'type':float}))
 
 '''
@@ -12,21 +14,15 @@ reg_dist = reg.reg_dist.reg
 
 
 class Dist:
-    def __init__(self, mu, sigma2, label, n_class, ret1h):
+    def __init__(self, mu, sigma2, label):
         self.mu = mu
         self.cov = np.eye(len(mu))*sigma2*len(mu)
         self.label = label
-        self.n_class = n_class
-        self.ret1h = ret1h
 
     def sample(self, size):
         if size<=0: size = 10000
         x_ = np.random.multivariate_normal(self.mu, self.cov, size)
-        if self.ret1h:
-            y_ = np.zeros((size,self.n_class), dtype=int)
-            y_[:,self.label] = 1
-        else:
-            y_ = np.ones((size,1), dtype=int)*self.label
+        y_ = np.ones(size, dtype=int)*self.label
         return (x_, y_)
 
 
@@ -68,12 +64,12 @@ def require(*arg_names):
 
 
 @require('toy_sigma2')
-def distinct_n(mus, ret1h=True):
-    locals = [Dist(mus[i], reg.arg_dict['toy_sigma2'], i, len(mus), ret1h) for i in range(len(mus))]
+def distinct_n(mus):
+    locals = [Dist(mus[i], reg.arg_dict['toy_sigma2'], i) for i in range(len(mus))]
     return locals, QGlobal(locals)
 
 @reg_dist
-def distinct_2_2(): return distinct_n([[1,1], [-1,-1]], False)
+def distinct_2_2(): return distinct_n([[1,1], [-1,-1]])
 
 @reg_dist
 def distinct_4_3(): return distinct_n([[1,1,1], [1,-1,-1], [-1,1,-1], [-1,-1,1]])
@@ -94,8 +90,8 @@ def test_distrb():
 '''
 definitions for functions
 '''
-from model import EvalBinaryClassification as Eval
-from model import params
+Eval = model.EvalClassification
+params = model.params
 
 
 def reg_func(dim_inp, dim_out):

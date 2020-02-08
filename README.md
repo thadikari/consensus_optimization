@@ -2,21 +2,28 @@
 
 This repository includes the code used to generate numerical results in the ICASSP 2020 conference paper titled "Decentralized optimization with non-identical sampling in presence of stragglers".
 
-<img src="data/archive10_icassp_final_results/run_mnist_linear1_distinct_10_PWG_perfect_amb_iclr_10_bern_08_60_10_metro.png?raw=true"/>
-<img src="data/archive10_icassp_final_results/run_mnist_linear1_distinct_10_PWG_rand_walk_amb_iclr_10_bern_08_60_10_metro.png?raw=true"/>
-<img src="data/archive10_icassp_final_results/run_mnist_relu1_distinct_10_PWG_rand_walk_amb_iclr_10_bern_08_60_10_metro.png?raw=true"/>
+| MNIST | Fashion-MNIST |
+|:-------------------------:|:-------------------------:|
+| <img width="100%" src="data/archive10_icassp_final_results/run_mnist_linear1_distinct_10_PWG_perfect_amb_iclr_10_bern_08_60_10_metro.png?raw=true">  |   <img width="100%" src="data/archive10_icassp_final_results/run_fashion_mnist_linear1_distinct_10_PWG_perfect_amb_iclr_10_bern_08_60_10_metro.png?raw=true">|
+|<img width="100%"  src="data/archive10_icassp_final_results/run_mnist_linear1_distinct_10_PWG_rand_walk_amb_iclr_10_bern_08_60_10_metro.png?raw=true">  |  <img width="100%"  src="data/archive10_icassp_final_results/run_fashion_mnist_linear1_distinct_10_PWG_rand_walk_amb_iclr_10_bern_08_60_10_metro.png?raw=true">|
+|<img width="100%"  src="data/archive10_icassp_final_results/run_mnist_relu1_distinct_10_PWG_rand_walk_amb_iclr_10_bern_08_60_10_metro.png?raw=true">  |  <img width="100%"  src="data/archive10_icassp_final_results/run_fashion_mnist_relu1_distinct_10_PWG_perfect_amb_iclr_10_bern_08_60_10_metro.png?raw=true">|
 
 ## Recreating results in paper
-#### Generate data:
+#### Generating data:
 * Sample usage: `python -u run_main.py --model fashion_mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000`
 * `python -u run_main.py --model cifar10 --data_dist distinct_10 --func conv --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000 --max_loss_eval_size 2 --lrate_start 0.001 --lrate_end 0.0001 --weights_scale 0.08`
 * Execute [`run_main.sh`](run_main.sh) to run all simulations included in the paper.
 
-#### Generate plots:
+#### Generating plots:
 Use the following to generate all plots.
 * `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords linear1 perfect --xhide --fig_size 6.5 2.08 --ylim 0.25 100`
 * `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords linear1 rand_walk --all_workers --xhide --fig_size 6.5 2.08 --ylim 0.35 100 --filter_sigma 5`
 * `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords relu1 perfect --fig_size 6.5 2.52 --ylim 0.2 1`
+
+
+
+
+-----
 
 
 

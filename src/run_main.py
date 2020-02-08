@@ -4,7 +4,7 @@ import json
 import os
 
 from graphs import make_doubly_stoch, graph_defs, eig_vals
-import model
+from models import model
 import utils
 
 
@@ -158,7 +158,7 @@ def main():
     print('run_id:', run_id)
     if not os.path.exists(_a.data_dir): os.makedirs(_a.data_dir)
 
-    reg = model.reg.get(_a.model).reg
+    reg = model.reg.get(_a.model)
     eval = reg.reg_func.get(_a.func)()
     Q_local_list, Q_global = reg.reg_dist.get(_a.data_dist)()
     workers = [Worker(eval, Q_local) for Q_local in Q_local_list]
