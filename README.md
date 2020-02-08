@@ -8,16 +8,16 @@ This repository includes the code used to generate numerical results in the ICAS
 
 ## Recreating results in paper
 #### Generate data:
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000`
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus rand_walk --num_consensus_rounds 10 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000`
-* `python -u run_main.py --model mnist --data_dist distinct_10 --func relu1 --opt PWG --consensus rand_walk --num_consensus_rounds 10 --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000`
-* Change accordingly and execute [`run_main.sh`](run_main.sh) to parallelly run all simulations.
+* Sample usage: `python -u run_main.py --model fashion_mnist --data_dist distinct_10 --func linear1 --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000`
+* `python -u run_main.py --model cifar10 --data_dist distinct_10 --func conv --opt PWG --consensus perfect --strag_dist bern --strag_dist_param 0.8 --num_samples 60 --grad_combine Equal Proportional --save --graph_def amb_iclr_10 --num_iters 5000 --max_loss_eval_size 2 --lrate_start 0.001 --lrate_end 0.0001 --weights_scale 0.08`
+* Execute [`run_main.sh`](run_main.sh) to run all simulations included in the paper.
 
 #### Generate plots:
 Use the following to generate all plots.
-* `python plot_run_main.py --ylog --num_iters 5000 --no_dots --silent --save --keywords linear1 perfect --xhide --fig_size 6.5 2.05`
-* `python plot_run_main.py --ylog --num_iters 5000 --no_dots --silent --save --keywords linear1 rand_walk --all_workers --xhide --fig_size 6.5 2.05`
-* `python plot_run_main.py --ylog --num_iters 5000 --no_dots --silent --save --keywords relu1 --all_workers --fig_size 6.5 2.5`
+* `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords linear1 perfect --xhide --fig_size 6.5 2.08 --ylim 0.25 100`
+* `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords linear1 rand_walk --all_workers --xhide --fig_size 6.5 2.08 --ylim 0.35 100 --filter_sigma 5`
+* `python plot_run_main.py --ylog --num_iters 100000 --no_dots --silent --save --keywords relu1 perfect --fig_size 6.5 2.52 --ylim 0.2 1`
+
 
 
 ## Other experiments

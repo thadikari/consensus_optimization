@@ -1,3 +1,4 @@
+from scipy.ndimage.filters import gaussian_filter1d
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
@@ -57,9 +58,14 @@ def plot_all(*args):
         ax = plt.gca()
         data = js['data']
         freq = js['loss_eval_freq']
+
+        def proc_data(_d):
+            if _a.num_iters>0: _d = _d[:int(_a.num_iters/freq)]
+            if _a.filter_sigma>0: _d = gaussian_filter1d(_d, sigma=_a.filter_sigma)
+            return _d
+
         for scheme in sorted(data.keys()):
             series = data[scheme]
-            proc_data = lambda _d: _d[:int(_a.num_iters/freq)] if _a.num_iters>0 else _d
             iter_ind = proc_data(np.array(range(len(series)))*freq)
             workers = list(zip(*series))
             if len(data)>1: # multiple schemes
@@ -74,12 +80,13 @@ def plot_all(*args):
 
         fmt_ax(ax, 'Iteration', 'Cost', 1)
         plt.gcf().set_size_inches(_a.fig_size)
-        plt.tight_layout()
-        # xlabels = [('%d'%x) + 'k' for x in ax.get_xticks()/1000]
-        # ax.set_xticklabels(xlabels)
+        plt.setp(ax.get_yminorticklabels(), visible=False)
+        if _a.yticks is not None: ax.set_yticks(_a.yticks)
+        if _a.ylim is not None: ax.set_ylim(_a.ylim)
         if _a.xhide:
             ax.set_xticklabels([])
             ax.set_xlabel(None)
+        plt.tight_layout()
         utils.save_show_fig(_a, plt, get_path())
         plt.cla()
 
@@ -93,6 +100,7 @@ def parse_args():
     parser.add_argument('--graph', help='plot the graph structure', action='store_true')
     parser.add_argument('--all_workers', help='plot all workers', action='store_true')
     parser.add_argument('--num_iters', help='max iteration to plot', type=int, default=-1)
+    parser.add_argument('--filter_sigma', default=0, type=float)
 
     parser.add_argument('--save_name', help='save name', type=str)
     parser.add_argument('--fig_size', nargs=2, type=float, default=[6.5,2.2])
@@ -100,6 +108,9 @@ def parse_args():
     parser.add_argument('--xhide', help='hide xticks and label', action='store_true')
     parser.add_argument('--xlog', help='log axis for x', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
+    parser.add_argument('--ylim', default=None, type=float, nargs=2)
+    parser.add_argument('--yticks', default=None, type=float, nargs='*')
+
     utils.bind_fig_save_args(parser)
     return parser.parse_args()
 
