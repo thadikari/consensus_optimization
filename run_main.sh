@@ -1,9 +1,10 @@
 #!/bin/bash
 
-EXEC="python -u src/run_main.py --model mnist --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 5000 --num_samples 60"
+EXEC="python -u src/run_main.py --model fashion_mnist --data_dist distinct_10 --save --graph_def amb_iclr_10 --num_iters 100000 --num_samples 60"
 
 log () { echo "$1"; }
-run () { log ">> $1"; eval "$1" & }
+run () { log ">> $1"; eval "$1"; }
+# run () { log ">> $1"; eval "$1" & } # runs all sims in parallel, exhausts resources
 exc () { run "$EXEC $1"; }
 
 
@@ -21,6 +22,6 @@ exc () { run "$EXEC $1"; }
 ARGS="--opt PWG --strag_dist bern --strag_dist_param 0.8 --grad_combine Equal Proportional"
 exc "$ARGS --func linear1 --consensus perfect"
 exc "$ARGS --func linear1 --consensus rand_walk --num_consensus_rounds 10"
-exc "$ARGS --func relu1 --consensus rand_walk --num_consensus_rounds 10"
+exc "$ARGS --func relu1 --consensus perfect"
 
 wait
