@@ -1,16 +1,16 @@
 import numpy as np
 
 from . import model
+from . import strategy
 
 
-reg = model.ModelReg()
-model.reg.put('toy_model', reg)
-reg.add_arg(('toy_sigma2', {'help':'variance within distributions', 'type':float}))
+model.datasets.put('toy_model', 1)
+model.add_arg(('toy_sigma2', {'help':'variance within distributions', 'type':float}))
 
 '''
-definitions for distributions
+definitions for distribution strategies
 '''
-reg_dist = reg.reg_dist.reg
+reg_dist = strategy.reg_stg
 
 
 class Dist:
@@ -56,7 +56,7 @@ def require(*arg_names):
     def inner(func):
         def wrapper(*args, **kwargs):
             for name in arg_names:
-                if reg.arg_dict.get(name, None) is None:
+                if model.arg_dict.get(name, None) is None:
                     raise ValueError('Missing required argument: %s'%name)
             return func(*args, **kwargs)
         return wrapper
@@ -65,21 +65,21 @@ def require(*arg_names):
 
 @require('toy_sigma2')
 def distinct_n(mus):
-    locals = [Dist(mus[i], reg.arg_dict['toy_sigma2'], i) for i in range(len(mus))]
+    locals = [Dist(mus[i], model.arg_dict['toy_sigma2'], i) for i in range(len(mus))]
     return locals, QGlobal(locals)
 
 @reg_dist
-def distinct_2_2(): return distinct_n([[1,1], [-1,-1]])
+def toy_2_2(d_): return distinct_n([[1,1], [-1,-1]])
 
 @reg_dist
-def distinct_4_3(): return distinct_n([[1,1,1], [1,-1,-1], [-1,1,-1], [-1,-1,1]])
+def toy_4_3(d_): return distinct_n([[1,1,1], [1,-1,-1], [-1,1,-1], [-1,-1,1]])
 
 @reg_dist
-def distinct_4_2(): return distinct_n([[1,0], [0,1], [-1,0], [0,-1]])
+def toy_4_2(d_): return distinct_n([[1,0], [0,1], [-1,0], [0,-1]])
 
 
 def test_distrb():
-    reg.arg_dict['toy_sigma2'] = 0.1
+    model.arg_vals['toy_sigma2'] = 0.1
     dists = distinct_2_2()
     plot_distrb(*dists)
     locals, Q_global = dists
@@ -97,7 +97,7 @@ params = model.params
 def reg_func(dim_inp, dim_out):
     def inner(func):
         lam = lambda: Eval(func, dim_inp, dim_out)
-        reg.reg_func.put(func.__name__, lam)
+        model.funcs.put(func.__name__, lam)
         return func
     return inner
 

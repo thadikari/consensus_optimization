@@ -1,43 +1,23 @@
 import tensorflow as tf
-import numpy as np
 
 from . import data_utils as du
 from . import model
 
 
-reg = model.ModelReg()
-model.reg.put('fashion_mnist', reg)
+def get_data(name):
+    def inner():
+        (x_train, y_train), _ = du.get_dataset(name)
+        x_train = x_train.reshape([-1, 784])
+        return x_train, y_train
+    inner.num_classes = 10
+    return inner
+
+register = lambda name: model.datasets.put(name, get_data(name))
+register('fashion_mnist')
+register('mnist')
 
 
-def process_data():
-    (x_train, y_train), _ = du.get_dataset('fashion_mnist')
-    x_train = x_train.reshape([-1, 784])
-    x_train, y_train = du.permute(x_train, y_train)
-    Q_global = Dist((x_train, y_train))
-    return x_train, y_train, Q_global
-
-'''
-definitions for distributions
-'''
-Dist = model.DistClassification
-reg_dist = reg.reg_dist.reg
-
-@reg_dist
-def identical_10():
-    x_, y_, Q_global = process_data()
-    locals = [Dist((x_, y_)) for _ in range(10)]
-    return locals, Q_global
-
-
-@reg_dist
-def distinct_10():
-    x_, y_, Q_global = process_data()
-    indss = [y_==cls for cls in range(10)]
-    #count = min(inds.sum() for inds in indss)
-    locals = [Dist((x_[inds], y_[inds])) for inds in indss]
-    return locals, Q_global
-
-
+''' needs refactoring
 # 'PQQQ', 'QPQQ', 'QQPQ', 'QQQP'
 def type_1_3(position_of_P):
     x_, y_ = process_data()
@@ -73,7 +53,7 @@ def test_distrb():
         assert(len(x_)==len(y_))
         assert(np.all(np.argmax(y_, axis=1)==i))
         print(x_.shape, y_.shape)
-
+'''
 
 
 '''
@@ -85,7 +65,7 @@ params = model.params
 
 def reg_func(func):
     lam = lambda: Eval(func, 784, 10)
-    reg.reg_func.put(func.__name__, lam)
+    model.funcs.put(func.__name__, lam)
     return func
 
 @reg_func
@@ -102,6 +82,3 @@ def linear1(x_):
 def relu1(x_):
     w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
     return w_, tf.nn.relu(x_@w1+b1)@w2+b2
-
-
-if __name__ == '__main__': test_distrb()

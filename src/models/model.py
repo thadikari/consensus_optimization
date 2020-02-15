@@ -1,77 +1,26 @@
 import tensorflow as tf
 import numpy as np
 
+from . import common
 
-'''
-abstract/common definitions for distributions
-'''
+datasets = common.Registry()
+funcs = common.Registry()
+arg_defs = []
+arg_dict = {}
 
-class Registry:
-    def __init__(self): self.dd = {}
-    def keys(self): return list(self.dd.keys())
-    def values(self): return list(self.dd.values())
-    def items(self): return self.dd.items()
-    def get(self, key): return self.dd[key]
-    def put(self, key, val):
-        assert(key not in self.dd)
-        self.dd[key] = val
-    def reg(self, tp):
-        self.put(tp.__name__, tp)
-        return tp
-
-
-reg = Registry()
-make_set = lambda lam_: sorted(set(k_ for v_ in reg.values() for k_ in lam_(v_).keys()))
-all_dists = lambda: make_set(lambda v_:v_.reg_dist)
-all_funcs = lambda: make_set(lambda v_:v_.reg_func)
-def is_valid_model(model, dist, func):
-    return (dist in reg.get(model).reg_dist.keys()) and\
-           (func in reg.get(model).reg_func.keys())
-
-class ModelReg:
-    def __init__(self):
-        self.reg_dist = Registry()
-        self.reg_func = Registry()
-        self.arg_defs = []
-        self.arg_dict = {}
-
-    def add_arg(self, arg):
-        self.arg_defs.append(arg)
+def add_arg(arg):
+    arg_defs.append(arg)
 
 def store_args(_a):
-    arg_dict = vars(_a)
-    for mod in reg.values():
-        for arg_def in mod.arg_defs:
-            name = arg_def[0]
-            mod.arg_dict[name] = arg_dict[name]
+    dd = vars(_a)
+    for arg_def in arg_defs:
+        name = arg_def[0]
+        arg_dict[name] = dd[name]
 
 def bind_args(parser):
-    for mod in reg.values():
-        for arg_def in mod.arg_defs:
-            name, kwargs = arg_def
-            parser.add_argument('--%s'%name, **kwargs)
-
-
-# for typical in-memory classification datasets like mnist
-class DistClassification:
-    def __init__(self, xy_): self.xy_ = xy_
-    def size(self): return len(self.xy_[0])
-
-    def summary(self):
-        summ = np.unique(np.argmax(self.xy_[1], axis=1), return_counts=1)
-        return dict(zip(*summ))
-
-    def sample(self, size):
-        if size>0:
-            tot = len(self.xy_[0])
-            inds = np.random.choice(tot, size=size)
-            return [z_[inds] for z_ in self.xy_]
-        else:
-            return self.xy_
-
-def test_dist():
-    print(reg.keys())
-    print(reg.get('QPQQ'))
+    for arg_def in arg_defs:
+        name, kwargs = arg_def
+        parser.add_argument('--%s'%name, **kwargs)
 
 
 '''

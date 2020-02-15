@@ -4,7 +4,7 @@ import json
 import os
 
 from graphs import make_doubly_stoch, graph_defs, eig_vals
-from models import model
+from models import model, strategy
 import utils
 
 
@@ -154,13 +154,13 @@ grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_
 
 def main():
     extra = '' if _a.extra is None else '__%s'%_a.extra
-    run_id = f'run_{_a.model}_{_a.func}_{_a.data_dist}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}{extra}'
+    run_id = f'run_{_a.dataset}_{_a.func}_{_a.strategy}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}{extra}'
     print('run_id:', run_id)
     if not os.path.exists(_a.data_dir): os.makedirs(_a.data_dir)
 
-    reg = model.reg.get(_a.model)
-    eval = reg.reg_func.get(_a.func)()
-    Q_local_list, Q_global = reg.reg_dist.get(_a.data_dist)()
+    dataset = model.datasets.get(_a.dataset)
+    eval = model.funcs.get(_a.func)()
+    Q_local_list, Q_global = strategy.reg.get(_a.strategy)(dataset)
     workers = [Worker(eval, Q_local) for Q_local in Q_local_list]
     numw = len(workers)
 
@@ -220,9 +220,9 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--model', help='model name', choices=model.reg.keys())
-    parser.add_argument('--data_dist', help='data distributions scheme', choices=model.all_dists())
-    parser.add_argument('--func', help='x->y function', choices=model.all_funcs())
+    parser.add_argument('--dataset', help='dataset name', choices=model.datasets.keys())
+    parser.add_argument('--strategy', help='strategy for distributing the dataset across workers', choices=strategy.reg.keys())
+    parser.add_argument('--func', help='x->y function', choices=model.funcs.keys())
 
     parser.add_argument('--graph_def', help='worker connectivity scheme', choices=graph_defs.keys())
     parser.add_argument('--opt', help='optimizer', choices=opts.keys())
@@ -255,9 +255,6 @@ def parse_args():
 
     model.bind_args(parser)
     _a = parser.parse_args()
-    args = _a.model, _a.data_dist, _a.func
-    if not model.is_valid_model(*args):
-        parser.error('Invalid dist/func combination for model: %s'%str(args))
     model.store_args(_a)
     return _a
 

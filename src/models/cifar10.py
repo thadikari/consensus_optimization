@@ -4,30 +4,13 @@ from . import data_utils as du
 from . import model
 
 
-reg = model.ModelReg()
-model.reg.put('cifar10', reg)
-
-
-'''
-definitions for distributions
-'''
-Dist = model.DistClassification
-reg_dist = reg.reg_dist.reg
-
-
-def process_data():
+def get_data():
     (x_train, y_train), _ = du.get_dataset('cifar10')
     y_train = y_train.reshape(-1)
-    x_train, y_train = du.permute(x_train, y_train)
-    Q_global = Dist((x_train, y_train))
-    return x_train, y_train, Q_global
+    return x_train, y_train
 
-@reg_dist
-def distinct_10():
-    x_, y_, Q_global = process_data()
-    indss = [y_==cls for cls in range(10)]
-    locals = [Dist((x_[inds], y_[inds])) for inds in indss]
-    return locals, Q_global
+get_data.num_classes = 10
+model.datasets.put('cifar10', get_data)
 
 
 '''
@@ -90,7 +73,7 @@ def conv_net(x, keep_prob, f1,f2,f3,f4, w1,b1, w2,b2, w3,b3, w4,b4):
 
 def reg_func(func):
     lam = lambda: Eval(func, [32,32,3], 10)
-    reg.reg_func.put(func.__name__, lam)
+    model.funcs.put(func.__name__, lam)
     return func
 
 @reg_func
