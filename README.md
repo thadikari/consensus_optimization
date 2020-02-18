@@ -48,6 +48,7 @@ Use the following to generate all plots.
 python plot_dist_mu2.py bern --trials 1000000 --bern_max 200 --bern_min 50
 python plot_dist_mu2.py gauss --trials 1000000 --gauss_loc 200 --gauss_max_std 400
 python plot_dist_mu2.py exp --trials 1000000 --exp_max 60 --exp_max_scale 15
+python plot_dist_mu2.py exptime --trials 1000000 --exptime_max_scale 15 --exptime_b0 1200 --exptime_t0 20
 ```
 * Change content in [`plot_dist_mu2.sh`](plot_dist_mu2.sh) and execute to generate all plots.
 * See results at [`data/archive9_theoretically_compare_equal_vs_proportional_upper_bnds`](data/archive9_theoretically_compare_equal_vs_proportional_upper_bnds).

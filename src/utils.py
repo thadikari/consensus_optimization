@@ -22,37 +22,39 @@ def resolve_data_dir(proj_name):
     if not SCRATCH: SCRATCH = os.path.join(os.path.expanduser('~'), 'SCRATCH')
     return os.path.join(SCRATCH, proj_name)
 
-def resolve_data_dir_os(proj_name):
+def resolve_data_dir_os(proj_name, extra=[]):
     if os.name == 'nt': # if windows
         curr_path = os.path.dirname(os.path.realpath(__file__))
-        return os.path.join(curr_path, '..', 'data', 'current')
+        return os.path.join(curr_path, '..', 'data', *extra)
     else:
         return resolve_data_dir(proj_name)
 
 
 #https://stackoverflow.com/questions/11367736/matplotlib-consistent-font-using-latex
-def mpl_init(font_size=14, legend_font_size=None):
+def mpl_init(font_size=14, legend_font_size=None, modify_cycler=True, tick_size=None):
     import matplotlib.pyplot as plt
     from cycler import cycler
     import matplotlib
 
     custom_cycler = (cycler(color=['r', 'b', 'g', 'y', 'k']) +
                      cycler(linestyle=['-', 'dotted', ':', '-.', '-']))
-    plt.rc('axes', prop_cycle=custom_cycler)
+    if modify_cycler: plt.rc('axes', prop_cycle=custom_cycler)
     matplotlib.rcParams['mathtext.fontset'] = 'stix'
     matplotlib.rcParams['font.family'] = 'STIXGeneral'
     matplotlib.rcParams.update({'font.size': font_size})
     if legend_font_size: plt.rc('legend', fontsize=legend_font_size)    # legend fontsize
     # https://stackoverflow.com/questions/3899980/how-to-change-the-font-size-on-a-matplotlib-plot
-
+    if tick_size:
+        matplotlib.rcParams['xtick.labelsize'] = tick_size
+        matplotlib.rcParams['ytick.labelsize'] = tick_size
+    # https://stackoverflow.com/questions/6390393/matplotlib-make-tick-labels-font-size-smaller
 
 def fmt_ax(ax, xlab, ylab, leg, grid=1):
     if leg: ax.legend(loc='best')
     if xlab: ax.set_xlabel(xlab)
     if ylab: ax.set_ylabel(ylab)
     if grid: ax.grid(alpha=0.7, linestyle='-.', linewidth=0.3)
-    ax.tick_params(axis='both', labelsize=12)
-
+    ax.tick_params(axis='both')
 
 def save_show_fig(args, plt, file_path):
     plt.tight_layout()

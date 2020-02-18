@@ -70,6 +70,18 @@ class exp(Dist):
 
 
 @register_
+class exptime(Dist):
+    def __init__(self):
+        super().__init__((0,_a.exptime_max_scale),
+                _a.exptime_sample_scale, r'Scale',
+                '%d_%g'%(_a.exptime_b0, _a.exptime_max_scale),
+                r'Exponential time: $b_0$=%d'%_a.exptime_b0)
+    def func(self, prm, shape):
+        shifted_exp = _a.exptime_t0 + np.random.exponential(scale=prm, size=shape)
+        return (_a.exptime_b0/shifted_exp).astype(int)
+
+
+@register_
 def mixg(shape):
     title = r'Gaussian mixture: mean=%s, stddev=%s'%(_a.mixg_loc, _a.mixg_std)
     xlabel = r'Mixture ratio'
@@ -134,8 +146,7 @@ def main():
     dst = reg.get(_a.dist)()
 
     data_dir = os.path.join(os.path.dirname(__file__),'..','data', _a.data_dir)
-    save = lambda sfx: plt.savefig(fname(sfx), bbox_inches='tight')
-    fname = lambda sfx: os.path.join(data_dir, '%s__%s%s.%s'%(_a.dist,dst.name,sfx,_a.ext))
+    fname = lambda sfx: os.path.join(data_dir, '%s__%s%s'%(_a.dist,dst.name,sfx))
     plt.gcf().set_size_inches(_a.fig_size)
 
     # plot histogram for sample data
@@ -146,12 +157,11 @@ def main():
     stitle = r'Histogram of $b_i$, %s=%g'%(dst.xlabel,dst.sam_prm)
     if not _a.notitle: plt.title(stitle)
     print(stitle)
-    plt.xlabel(lmth('b_i'))
-    plt.ylabel('Frequency')
-    plt.gca().set_yticks([])
-    if _a.save: save('_hist_%g'%dst.sam_prm)
-    # plt.show()
-    # exit()
+    ax = plt.gca()
+    ax.set_yticks([])
+    utils.fmt_ax(ax, lmth('b_i'), 'Frequency', 0)
+    utils.save_show_fig(_a, plt, fname('_hist_%g'%dst.sam_prm))
+
     plt.clf()
 
 
@@ -189,12 +199,11 @@ def main():
     #plt.gca().set_aspect('equal', adjustable='box')
     if not _a.notitle: plt.title(dst.title)
     print(dst.title)
-    plt.xlabel(dst.xlabel)
-    plt.gca().set_yticks([])
-    plt.legend(loc='best')
-    if _a.ylog: plt.gca().set_yscale('log')
-    if _a.save: save('')
-    if not _a.noshow: plt.show()
+    ax = plt.gca()
+    ax.set_yticks([])
+    if _a.ylog: ax.set_yscale('log')
+    utils.fmt_ax(ax, dst.xlabel, None, 1)
+    utils.save_show_fig(_a, plt, fname(''))
 
 
 def parse_args():
@@ -218,19 +227,23 @@ def parse_args():
     parser.add_argument('--exp_max_scale', type=float, default=20)
     parser.add_argument('--exp_sample_scale', type=float, default=10)
 
+    parser.add_argument('--exptime_b0', type=int, default=60)
+    parser.add_argument('--exptime_t0', type=int, default=60)
+    parser.add_argument('--exptime_max_scale', type=float, default=20)
+    parser.add_argument('--exptime_sample_scale', type=float, default=10)
+
     parser.add_argument('--mixg_max', type=int, default=250)
     parser.add_argument('--mixg_loc', type=int, nargs='+', default=[250, 170, 50])
     parser.add_argument('--mixg_std', type=float, nargs='+', default=[20, 25, 30])
 
 
-    parser.add_argument('--fig_size', help='width, height', default=[4,3])
-    parser.add_argument('--noshow', help='do not show plots', action='store_true')
+    parser.add_argument('--fig_size', help='width, height', default=[7,5])
     parser.add_argument('--notitle', help='do not show title', action='store_true')
     parser.add_argument('--yticks', help='show yticks', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
-    parser.add_argument('--save', help='save plots', action='store_true')
-    parser.add_argument('--ext', help='extention', default='png', choices=['png', 'pdf'])
     parser.add_argument('--data_dir', default='current')
+
+    utils.bind_fig_save_args(parser)
     return parser.parse_args()
 
 
