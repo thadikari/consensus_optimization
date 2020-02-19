@@ -13,8 +13,8 @@ plt.rc('lines', linewidth=2)
 # ax.tick_params(axis='x', labelsize=12)
 
 
-reg = utils.Registry()
-register_ = reg.reg
+reg_dist = utils.Registry()
+reg_plot = utils.Registry()
 
 
 class Dist:
@@ -27,7 +27,7 @@ class Dist:
             yield prm, self.func(prm, shape)
 
 
-@register_
+@reg_dist.reg
 class bern(Dist):
     def __init__(self):
         super().__init__((0,1), _a.bern_sample_p, r'$p$',
@@ -41,7 +41,7 @@ class bern(Dist):
         return dd_
 
 
-@register_
+@reg_dist.reg
 class gauss(Dist):
     def __init__(self):
         super().__init__((0,_a.gauss_max_std),
@@ -55,7 +55,7 @@ class gauss(Dist):
         return dd_
 
 
-@register_
+@reg_dist.reg
 class exp(Dist):
     def __init__(self):
         super().__init__((0,_a.exp_max_scale),
@@ -69,7 +69,7 @@ class exp(Dist):
         return dd_
 
 
-@register_
+@reg_dist.reg
 class exptime(Dist):
     def __init__(self):
         super().__init__((0,_a.exptime_max_scale),
@@ -81,7 +81,7 @@ class exptime(Dist):
         return (_a.exptime_b0/shifted_exp).astype(int)
 
 
-@register_
+@reg_dist.reg
 def mixg(shape):
     title = r'Gaussian mixture: mean=%s, stddev=%s'%(_a.mixg_loc, _a.mixg_std)
     xlabel = r'Mixture ratio'
@@ -140,15 +140,8 @@ def cond():
     plt.show()
 
 
-def main():
-    n = _a.n_wkr
-    shape = (_a.trials, n)
-    dst = reg.get(_a.dist)()
-
-    data_dir = os.path.join(os.path.dirname(__file__),'..','data', _a.data_dir)
-    fname = lambda sfx: os.path.join(data_dir, '%s__%s%s'%(_a.dist,dst.name,sfx))
-    plt.gcf().set_size_inches(_a.fig_size)
-
+@reg_plot.reg
+def histogram(n, shape, dst, fname):
     # plot histogram for sample data
     sample = dst.func(dst.sam_prm, shape).flatten()
     bins = np.arange(min(sample)-1, max(sample) + 1, 1) + 0.5
@@ -162,9 +155,9 @@ def main():
     utils.fmt_ax(ax, lmth('b_i'), 'Frequency', 0)
     utils.save_show_fig(_a, plt, fname('_hist_%g'%dst.sam_prm))
 
-    plt.clf()
 
-
+@reg_plot.reg
+def compare_mu(n, shape, dst, fname):
     # compute expected vals
     xvals, data = [], []
     for xval,bis in dst.gen(shape):
@@ -206,9 +199,21 @@ def main():
     utils.save_show_fig(_a, plt, fname(''))
 
 
+def main():
+    # plt.clf()
+    n = _a.n_wkr
+    dist = reg_dist.get(_a.dist)()
+    plt.gcf().set_size_inches(_a.fig_size)
+    data_dir = os.path.join(os.path.dirname(__file__),'..','data', _a.data_dir)
+    fname = lambda sfx: os.path.join(data_dir, '%s__%s%s'%(_a.dist,dist.name,sfx))
+    args = n, (_a.trials, n), dist, fname
+    for pl in _a.plots: reg_plot.get(pl)(*args)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('dist', help='type of distribution', choices=reg.keys())
+    parser.add_argument('dist', help='type of distribution', choices=reg_dist.keys())
+    parser.add_argument('--plots', help='type of the plots', nargs='+', default=reg_plot.keys(), choices=reg_plot.keys())
     parser.add_argument('--trials', help='number of trials for monte-carlo', type=int, default=100)
     parser.add_argument('--n_wkr', help='number of workers', type=int, default=10)
     parser.add_argument('--n_xpts', help='x-axis granularity', type=int, default=30)
