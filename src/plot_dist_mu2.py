@@ -71,6 +71,12 @@ class exp(Dist):
 
 @reg_dist.reg
 class exptime(Dist):
+    '''
+    Assume that the time taken to compute a given mini-batch is distributed
+    according to the shifted exponential distribution with parameter `prm`.
+    For such systems, if the time for computation is fixed `exptime`
+    gives the distribution of the variable mini-batch size.
+    '''
     def __init__(self):
         super().__init__((0,_a.exptime_max_scale),
                 _a.exptime_sample_scale, r'Scale',
@@ -185,9 +191,7 @@ def compare_mu(n, shape, dst, fname):
     labels = (l_mu2, l_n2mu3, lmth('n^2 \mu_3+ %g'%_a.scal)+l_va4, l_va4, 'dtild')
 
     data = np.array(data).T
-    for sr,label in zip(data, labels):
-        # print(sr,label)
-        plt.plot(xvals, sr, label=label)
+    for sr,label in zip(data, labels): plt.plot(xvals, sr, label=label)
 
     #plt.gca().set_aspect('equal', adjustable='box')
     if not _a.notitle: plt.title(dst.title)
@@ -200,7 +204,6 @@ def compare_mu(n, shape, dst, fname):
 
 
 def main():
-    # plt.clf()
     n = _a.n_wkr
     dist = reg_dist.get(_a.dist)()
     plt.gcf().set_size_inches(_a.fig_size)
