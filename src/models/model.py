@@ -1,10 +1,13 @@
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utilities'))
+
 import tensorflow as tf
 import numpy as np
 
-from . import common
+import utilities as ut
 
-datasets = common.Registry()
-funcs = common.Registry()
+datasets = ut.Registry()
+funcs = ut.Registry()
 arg_defs = []
 arg_dict = {}
 

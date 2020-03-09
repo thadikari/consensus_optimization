@@ -4,17 +4,19 @@ import matplotlib
 import argparse
 import os
 
-import utils
+import utilities as ut
+import utilities.file
+import utilities.mpl as utils
 
 
-utils.mpl_init()
+utils.init()
 plt.rc('lines', linewidth=2)
 # matplotlib.rcParams.update({'font.size': 14})
 # ax.tick_params(axis='x', labelsize=12)
 
 
-reg_dist = utils.Registry()
-reg_plot = utils.Registry()
+reg_dist = ut.Registry()
+reg_plot = ut.Registry()
 
 
 class Dist:
@@ -249,7 +251,7 @@ def parse_args():
     parser.add_argument('--notitle', help='do not show title', action='store_true')
     parser.add_argument('--yticks', help='show yticks', action='store_true')
     parser.add_argument('--ylog', help='log axis for y', action='store_true')
-    parser.add_argument('--data_dir', default='current')
+    parser.add_argument('--data_dir', default=ut.file.resolve_data_dir_os('consensus'))
 
     utils.bind_fig_save_args(parser)
     return parser.parse_args()

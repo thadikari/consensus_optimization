@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from . import data_utils as du
+import utilities.data as du
 from . import model
 
 

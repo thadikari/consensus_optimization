@@ -1,10 +1,10 @@
 import numpy as np
 
-from . import data_utils as du
-from . import common
+import utilities.data as du
+import utilities as ut
 
 
-reg = common.Registry()
+reg = ut.Registry()
 reg_stg = reg.reg
 
 

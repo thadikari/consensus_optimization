@@ -7,11 +7,13 @@ import json
 import os
 
 import graphs
-import utils
+import utilities as ut
+import utilities.file
+import utilities.mpl as utils
 
 
-utils.mpl_init()
-reg = utils.Registry()
+utils.init()
+reg = ut.Registry()
 register = reg.reg
 
 def fmt_ax(*args, **kwargs):
@@ -94,7 +96,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--type', default='plot_all', choices=reg.keys())
     parser.add_argument('--dir_name', default='', type=str)
-    parser.add_argument('--data_dir', default=utils.resolve_data_dir_os('consensus'))
+    parser.add_argument('--data_dir', default=ut.file.resolve_data_dir_os('consensus'))
     parser.add_argument('--keywords', default=[], type=str, nargs='+')
 
     parser.add_argument('--graph', help='plot the graph structure', action='store_true')

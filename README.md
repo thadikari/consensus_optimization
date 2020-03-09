@@ -3,6 +3,7 @@
 This repository includes the code used to generate numerical results in the ICASSP 2020 conference paper titled "Decentralized optimization with non-identical sampling in presence of stragglers".
 
 *The snapshot of the code/data/plots can be found in this [release](https://github.com/thadikari/consensus/releases/tag/v2.0).*
+If clonning this repository use `git clone --recurse-submodules` to include submodules at [`src/utilities`](src/utilities).
 
 
 | MNIST | Fashion-MNIST |

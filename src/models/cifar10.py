@@ -1,12 +1,11 @@
 import tensorflow as tf
 
-from . import data_utils as du
+import utilities.data as du
 from . import model
 
 
 def get_data():
     (x_train, y_train), _ = du.get_dataset('cifar10')
-    y_train = y_train.reshape(-1)
     return x_train, y_train
 
 get_data.num_classes = 10

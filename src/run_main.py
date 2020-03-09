@@ -5,7 +5,8 @@ import os
 
 from graphs import make_doubly_stoch, graph_defs, eig_vals
 from models import model, strategy
-import utils
+import utilities as ut
+import utilities.file
 
 
 class Worker:
@@ -43,7 +44,7 @@ def grad_combine_conf(grads, num_samples):
     return confs[:, np.newaxis]*grads
 
 
-opts = utils.Registry()
+opts = ut.Registry()
 reg_ = lambda name: (lambda cls: opts.put(name, cls))
 
 class Optimizer:
@@ -246,7 +247,7 @@ def parse_args():
     parser.add_argument('--lrate_start', help='start learning rate', type=float, default=0.1)
     parser.add_argument('--lrate_end', help='end learning rate', type=float, default=0.01)
 
-    parser.add_argument('--data_dir', default=utils.resolve_data_dir('consensus'))
+    parser.add_argument('--data_dir', default=ut.file.resolve_data_dir('consensus'))
     parser.add_argument('--save', help='save json', action='store_true')
     parser.add_argument('--extra', help='unique string for json name', type=str)
     parser.add_argument('--save_freq', help='save frequency', type=int, default=20)
