@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 import utilities.data as du
+import utilities.models.mnist as mnist
 from . import model
 
 
@@ -60,25 +61,30 @@ def test_distrb():
 definitions for functions
 '''
 Eval = model.EvalClassification
-params = model.params
+dense = tf.layers.dense
 
 
 def reg_func(func):
-    lam = lambda: Eval(func, 784, 10)
+    lam = lambda: Eval(model.var_collector(func), 784, 10)
     model.funcs.put(func.__name__, lam)
     return func
 
 @reg_func
 def linear0(x_):
-    w_, w, b = params((784,10), 10)
-    return w_, x_@w+b
+    return dense(x_, 10, activation=None)
 
 @reg_func
 def linear1(x_):
-    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-    return w_, (x_@w1+b1)@w2+b2
+    x_ = dense(x_, 500, activation=None)
+    x_ = dense(x_, 10, activation=None)
+    return x_
 
 @reg_func
 def relu1(x_):
-    w_, w1, b1, w2, b2 = params((784,500), 500, (500,10), 10)
-    return w_, tf.nn.relu(x_@w1+b1)@w2+b2
+    x_ = dense(x_, 500, activation=tf.nn.relu)
+    x_ = dense(x_, 10, activation=None)
+    return x_
+
+@reg_func
+def conv1(x_):
+    return mnist.create_conv(x_)

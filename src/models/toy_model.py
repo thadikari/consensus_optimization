@@ -1,3 +1,4 @@
+import tensorflow as tf
 import numpy as np
 
 from . import model
@@ -91,30 +92,27 @@ def test_distrb():
 definitions for functions
 '''
 Eval = model.EvalClassification
-params = model.params
+dense = tf.layers.dense
 
 
 def reg_func(dim_inp, dim_out):
     def inner(func):
-        lam = lambda: Eval(func, dim_inp, dim_out)
+        lam = lambda: Eval(model.var_collector(func), dim_inp, dim_out)
         model.funcs.put(func.__name__, lam)
         return func
     return inner
 
 @reg_func(2,1)
 def linear2(x_):
-    w_, w = params((2,1))
-    return w_, x_@w
+    return dense(x_, 1, activation=None)
 
 @reg_func(3,4)
 def linear3(x_):
-    w_, w, b = params((3,4), 4)
-    return w_, x_@w+b
+    return dense(x_, 4, activation=None)
 
 @reg_func(2,4)
 def linear4(x_):
-    w_, w, b = params((2,4), 4)
-    return w_, x_@w+b
+    return dense(x_, 4, activation=None)
 
 
 if __name__ == '__main__': test_distrb()
