@@ -155,7 +155,7 @@ grad_combine_schemes = {'Equal':grad_combine_equal, 'Proportional':grad_combine_
 
 def main():
     extra = '' if _a.extra is None else '__%s'%_a.extra
-    run_id = f'run_{_a.dataset}_{_a.func}_{_a.strategy}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}{extra}'
+    run_id = f'run_{_a.dataset}_{_a.func}_{_a.strategy}_{_a.opt}_{_a.consensus}_{_a.graph_def}_{_a.strag_dist}_{_a.strag_dist_param:g}_{_a.num_samples}_{_a.num_consensus_rounds}_{_a.doubly_stoch}_{_a.lrate_start:g}_{_a.lrate_end:g}{extra}'
     print('run_id:', run_id)
     if not os.path.exists(_a.data_dir): os.makedirs(_a.data_dir)
 
@@ -177,7 +177,8 @@ def main():
 
 
     dim_w = eval.get_size()
-    w_init = np.random.RandomState(seed=_a.weights_seed).normal(scale=_a.weights_scale, size=dim_w)
+    # w_init = np.random.RandomState(seed=_a.weights_seed).normal(scale=_a.weights_scale, size=dim_w)
+    w_init = eval.get_vars()
     sc = lambda comb: Scheme(workers, dim_w, Q_global,
                         opts.get(_a.opt)(w_init, mat_P, comb).init())
     schemes = [sc(grad_combine_schemes[name]) for name in _a.grad_combine]
@@ -240,7 +241,7 @@ def parse_args():
     parser.add_argument('--eval_grad_var', help='compute variance of gradients', action='store_true')
     parser.add_argument('--num_var_samples', help='num. samples for variance computation', type=int, default=10000)
     parser.add_argument('--var_eval_freq', help='frequency of variance computation', type=int, default=20)
-    parser.add_argument('--weights_seed', help='seed for generating init weights', type=int)
+    # parser.add_argument('--weights_seed', help='seed for generating init weights', type=int)
     parser.add_argument('--weights_scale', help='std.dev for initializing normal weights', type=float, default=1.)
 
     parser.add_argument('--num_iters', help='total iterations count', type=int, default=1000)

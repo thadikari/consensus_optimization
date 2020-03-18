@@ -6,6 +6,7 @@ import numpy as np
 
 import utilities as ut
 
+
 datasets = ut.Registry()
 funcs = ut.Registry()
 arg_defs = []
@@ -29,7 +30,6 @@ def bind_args(parser):
 '''
 abstract/common definitions for functions
 '''
-
 
 VAR_SCOPE = 'varcollectorjustadummyname'
 
@@ -71,12 +71,14 @@ Also, need to keep track of the varince for each worker.
 https://stackoverflow.com/questions/55310934/why-moving-mean-and-moving-variance-not-in-tf-trainable-variables
 https://stackoverflow.com/a/45420579/1551308: These 2048 parameters are in fact [gamma weights, beta weights, moving_mean(non-trainable), moving_variance(non-trainable)]
 '''
-def create_grad_vec(grads, var_list):
-    vecs = []
+def create_vecs(grads, var_list):
+    vecs_grad = []
+    vecs_var = []
     for grad,var_ in zip(grads, var_list):
         tnsr = tf.zeros_like(var_) if grad is None else grad
-        vecs.append(tf.reshape(tnsr, [-1]))
-    return tf.concat(vecs, 0)
+        vecs_grad.append(tf.reshape(tnsr, [-1]))
+        vecs_var.append(tf.reshape(var_, [-1]))
+    return tf.concat(vecs_grad, 0), tf.concat(vecs_var, 0)
 
 
 # for typical regression problems
@@ -92,13 +94,15 @@ class Evaluator:
         logits_, self.train_args, self.test_args = rets if isinstance(rets, tuple) else (rets, {}, {})
         self.loss = tf.reduce_mean(self.compute_loss(y1h, logits_))
 
-        self.grad = create_grad_vec(tf.gradients(self.loss, var_list), var_list)
+        self.grad, self.vars = create_vecs(tf.gradients(self.loss, var_list), var_list)
         self.assign_op, self.pl_w, self.pl_len = create_assign_op(var_list)
 
+        initializer = tf.compat.v1.global_variables_initializer()
         self.sess = tf.compat.v1.Session()
+        self.sess.run(initializer)
 
-    def get_size(self):
-        return self.pl_len
+    def get_size(self): return self.pl_len
+    def get_vars(self): return self.sess.run(self.vars)
 
     def eval(self, w_, xy_, testing=False):
         x_, y_ = xy_
@@ -107,6 +111,7 @@ class Evaluator:
               **(self.test_args if testing else self.train_args)}
         loss, grad = self.sess.run([self.loss, self.grad], feed_dict=dd)
         return loss, grad
+
 
 class EvalClassification(Evaluator):
     def compute_loss(self, label, logits):
